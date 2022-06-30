@@ -7,11 +7,12 @@ use std::{
     result
 };
 use clap::Parser;
-use serde::{
-    Deserialize,
-    Serialize
-};
-use serde_json::Result;
+
+use crate::parse::package_json::PackageJsonParser;
+use crate::parse::DependencyParse;
+
+mod soup;
+mod parse;
 
 const EXCLUDE_DIRS: [&'static str; 3] = [
     "node_modules",
@@ -46,10 +47,10 @@ fn main() {
         panic!("Invalid directory: {:?}", path);
     }
     let result = walk_dir(target_dir).unwrap();
-    let mut soup_contexts: Vec<SoupContext> = Vec::new();
+    let mut soup_contexts: Vec<soup::SoupContext> = Vec::new();
     for r in result {
-        let soup_context = find_soups(r);
-        soup_contexts.push(soup_context);
+        let parser = PackageJsonParser::new(r);
+        soup_contexts.push(parser.parse());
     }
     let json = serde_json::to_string(&soup_contexts).unwrap();
     println!("{}", json);
@@ -79,39 +80,4 @@ fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error>
         }
     }
     return Ok(files);
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct PackageJson {
-    dependencies: collections::HashMap<String, String>
-}
-
-fn find_soups(path: path::PathBuf) -> SoupContext {
-    let file = fs::File::open(&path).unwrap();
-    let reader = io::BufReader::new(file);
-    let p: PackageJson = serde_json::from_reader(reader).unwrap();
-    let soups = p.dependencies.into_iter()
-            .map(|(key, value)| Soup {
-                name: key,
-                version: value,
-                meta: collections::HashMap::new()
-            })
-            .collect::<Vec<Soup>>();
-    return SoupContext {
-        path,
-        soups
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct Soup {
-    name: String,
-    version: String,
-    meta: collections::HashMap<String, serde_json::Value>
-}
-
-#[derive(Serialize, Deserialize)]
-struct SoupContext {
-    path: path::PathBuf,
-    soups: Vec<Soup>
 }
