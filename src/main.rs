@@ -46,9 +46,13 @@ fn main() {
         panic!("Invalid directory: {:?}", path);
     }
     let result = walk_dir(target_dir).unwrap();
+    let mut soup_contexts: Vec<SoupContext> = Vec::new();
     for r in result {
-        find_soups(r);
+        let soup_context = find_soups(r);
+        soup_contexts.push(soup_context);
     }
+    let json = serde_json::to_string(&soup_contexts).unwrap();
+    println!("{}", json);
 }
 
 fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error> {
@@ -82,11 +86,32 @@ struct PackageJson {
     dependencies: collections::HashMap<String, String>
 }
 
-fn find_soups(path: path::PathBuf) {
-    let file = fs::File::open(path).unwrap();
+fn find_soups(path: path::PathBuf) -> SoupContext {
+    let file = fs::File::open(&path).unwrap();
     let reader = io::BufReader::new(file);
     let p: PackageJson = serde_json::from_reader(reader).unwrap();
-    for (key, value) in p.dependencies.into_iter() {
-        println!("package: {}\tversion: {}", key, value);
+    let soups = p.dependencies.into_iter()
+            .map(|(key, value)| Soup {
+                name: key,
+                version: value,
+                meta: collections::HashMap::new()
+            })
+            .collect::<Vec<Soup>>();
+    return SoupContext {
+        path,
+        soups
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Soup {
+    name: String,
+    version: String,
+    meta: collections::HashMap<String, serde_json::Value>
+}
+
+#[derive(Serialize, Deserialize)]
+struct SoupContext {
+    path: path::PathBuf,
+    soups: Vec<Soup>
 }
