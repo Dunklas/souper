@@ -26,3 +26,43 @@ impl <R> SoupSource<R> for PackageJson where R: io::Read {
         return soups;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_dependency() {
+        let content = "{
+            \"dependencies\": {
+                \"some-lib\": \"^1.0.0\"
+            }
+        }".as_bytes();
+        let soups = PackageJson::soups(content);
+        assert_eq!(1, soups.len());
+        let expected_soup = soup::Soup {
+            name: "some-lib".to_owned(),
+            version: "^1.0.0".to_owned(),
+            meta: collections::HashMap::new()
+        };
+        assert_eq!(expected_soup, soups[0]);
+    }
+
+    #[test]
+    fn multiple_dependencies() {
+        let content = "{
+            \"dependencies\": {
+                \"some-lib\": \"^1.0.0\",
+                \"another-lib\": \"6.6.6\"
+            }
+        }".as_bytes();
+        let soups = PackageJson::soups(content);
+        assert_eq!(2, soups.len());
+        let expected_soups = vec![
+            soup::Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: collections::HashMap::new() },
+            soup::Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: collections::HashMap::new() }
+        ];
+        assert_eq!(true, soups.contains(&expected_soups[0]));
+        assert_eq!(true, soups.contains(&expected_soups[1]));
+    }
+}

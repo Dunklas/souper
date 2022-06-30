@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     collections,
     path
 };
@@ -7,7 +8,7 @@ use serde::{
     Serialize
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, cmp::Eq, cmp::PartialEq)]
 pub struct Soup {
     pub name: String,
     pub version: String,
