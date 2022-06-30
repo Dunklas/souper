@@ -1,10 +1,17 @@
 use std::{
+    collections,
     env,
+    fs,
     io,
     path,
-    fs
+    result
 };
 use clap::Parser;
+use serde::{
+    Deserialize,
+    Serialize
+};
+use serde_json::Result;
 
 const EXCLUDE_DIRS: [&'static str; 3] = [
     "node_modules",
@@ -40,11 +47,11 @@ fn main() {
     }
     let result = walk_dir(target_dir).unwrap();
     for r in result {
-        println!("{:?}", r);
+        find_soups(r);
     }
 }
 
-fn walk_dir(dir: path::PathBuf) -> Result<Vec<path::PathBuf>, io::Error> {
+fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error> {
     let mut files: Vec<path::PathBuf> = Vec::new();
     'entries: for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -68,4 +75,18 @@ fn walk_dir(dir: path::PathBuf) -> Result<Vec<path::PathBuf>, io::Error> {
         }
     }
     return Ok(files);
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct PackageJson {
+    dependencies: collections::HashMap<String, String>
+}
+
+fn find_soups(path: path::PathBuf) {
+    let file = fs::File::open(path).unwrap();
+    let reader = io::BufReader::new(file);
+    let p: PackageJson = serde_json::from_reader(reader).unwrap();
+    for (key, value) in p.dependencies.into_iter() {
+        println!("package: {}\tversion: {}", key, value);
+    }
 }
