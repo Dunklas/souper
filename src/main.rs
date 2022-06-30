@@ -1,5 +1,4 @@
 use std::{
-    collections,
     env,
     fs,
     io,
@@ -8,8 +7,8 @@ use std::{
 };
 use clap::Parser;
 
-use crate::parse::package_json::PackageJsonParser;
-use crate::parse::DependencyParse;
+use crate::parse::package_json::PackageJson;
+use crate::parse::SoupSource;
 
 mod soup;
 mod parse;
@@ -49,8 +48,13 @@ fn main() {
     let result = walk_dir(target_dir).unwrap();
     let mut soup_contexts: Vec<soup::SoupContext> = Vec::new();
     for r in result {
-        let parser = PackageJsonParser::new(r);
-        soup_contexts.push(parser.parse());
+        let file = fs::File::open(&r).unwrap();
+        let reader = io::BufReader::new(file);
+        let soups = PackageJson::soups(reader);
+        soup_contexts.push(soup::SoupContext{
+            path: r,
+            soups
+        });
     }
     let json = serde_json::to_string(&soup_contexts).unwrap();
     println!("{}", json);
