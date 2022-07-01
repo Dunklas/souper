@@ -3,8 +3,7 @@ use std::{
     env,
     fs,
     io,
-    path,
-    result
+    path
 };
 use clap::Parser;
 
@@ -13,12 +12,7 @@ use crate::parse::SoupSource;
 
 mod soup;
 mod parse;
-
-const EXCLUDE_DIRS: [&'static str; 3] = [
-    "node_modules",
-    "bin",
-    "obj"
-];
+mod dir_scan;
 
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
 #[derive(Parser)]
@@ -46,7 +40,7 @@ fn main() {
     if !path.exists() || !path.is_dir() {
         panic!("Invalid directory: {:?}", path);
     }
-    let result = walk_dir(target_dir).unwrap();
+    let result = dir_scan::scan(&target_dir).unwrap();
     let mut soup_contexts: Vec<soup::SoupContext> = Vec::new();
     for r in result {
         let file = fs::File::open(&r).unwrap();
@@ -58,32 +52,6 @@ fn main() {
         });
     }
     write_soups(soup_contexts, args.file).unwrap();
-}
-
-fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error> {
-    let mut files: Vec<path::PathBuf> = Vec::new();
-    'entries: for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        let file_type = entry.file_type()?;
-        let file_name = entry.file_name();
-        if file_type.is_dir() {
-            for ex in EXCLUDE_DIRS {
-                if file_name.eq(ex) {
-                    continue 'entries;
-                }
-            }
-            let mut content = walk_dir(path)?;
-            files.append(&mut content);
-            continue;
-        }
-        if file_type.is_file() {
-            if file_name.eq("package.json") {
-                files.push(path);
-            }
-        }
-    }
-    return Ok(files);
 }
 
 fn write_soups(soup_contexts: Vec<soup::SoupContext>, path: path::PathBuf) -> Result<(), io::Error> {
