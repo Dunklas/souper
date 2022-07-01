@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::{
     env,
     fs,
@@ -56,8 +57,7 @@ fn main() {
             soups
         });
     }
-    let json = serde_json::to_string(&soup_contexts).unwrap();
-    println!("{}", json);
+    write_soups(soup_contexts, args.file).unwrap();
 }
 
 fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error> {
@@ -84,4 +84,10 @@ fn walk_dir(dir: path::PathBuf) -> result::Result<Vec<path::PathBuf>, io::Error>
         }
     }
     return Ok(files);
+}
+
+fn write_soups(soup_contexts: Vec<soup::SoupContext>, path: path::PathBuf) -> Result<(), io::Error> {
+    let mut output_file = fs::File::create(path)?;
+    output_file.write_all(serde_json::to_string_pretty(&soup_contexts).unwrap().as_bytes())?;
+    Ok(())
 }
