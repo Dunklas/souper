@@ -11,7 +11,7 @@ use serde::{
 };
 use crate::parse::{
     SoupSource,
-    package_json
+    package_json::{PackageJson}
 };
 
 #[derive(Serialize, Deserialize, Debug, cmp::Eq, cmp::PartialEq)]
@@ -38,8 +38,18 @@ impl SoupContexts {
         for path in paths {
             let file = fs::File::open(&path).unwrap();
             let reader = io::BufReader::new(file);
-            let soups = package_json::PackageJson::soups(reader);
-            soup_contexts.push(SoupContext { path: path, soups: soups })
+            let soups = match path.file_name() {
+                None => {
+                    panic!("No filename for path: {:?}", path);
+                },
+                Some(filename) => match filename.to_str().unwrap() {
+                    "package.json" => PackageJson::soups(reader),
+                    _ => {
+                        panic!("No parser found for: {:?}", filename)
+                    }
+                }
+            };
+            soup_contexts.push(SoupContext { path, soups })
         }
         SoupContexts{
             contexts: soup_contexts
