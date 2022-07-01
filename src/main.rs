@@ -7,9 +7,6 @@ use std::{
 };
 use clap::Parser;
 
-use crate::parse::package_json::PackageJson;
-use crate::parse::SoupSource;
-
 mod soup;
 mod parse;
 mod dir_scan;
@@ -41,21 +38,12 @@ fn main() {
         panic!("Invalid directory: {:?}", path);
     }
     let result = dir_scan::scan(&target_dir).unwrap();
-    let mut soup_contexts: Vec<soup::SoupContext> = Vec::new();
-    for r in result {
-        let file = fs::File::open(&r).unwrap();
-        let reader = io::BufReader::new(file);
-        let soups = PackageJson::soups(reader);
-        soup_contexts.push(soup::SoupContext{
-            path: r,
-            soups
-        });
-    }
-    write_soups(soup_contexts, args.file).unwrap();
+    let contexts = soup::SoupContexts::from_paths(result);
+    write_soups(contexts, args.file).unwrap();
 }
 
-fn write_soups(soup_contexts: Vec<soup::SoupContext>, path: path::PathBuf) -> Result<(), io::Error> {
+fn write_soups(soup_contexts: soup::SoupContexts, path: path::PathBuf) -> Result<(), io::Error> {
     let mut output_file = fs::File::create(path)?;
-    output_file.write_all(serde_json::to_string_pretty(&soup_contexts).unwrap().as_bytes())?;
+    output_file.write_all(serde_json::to_string_pretty(soup_contexts.vec()).unwrap().as_bytes())?;
     Ok(())
 }
