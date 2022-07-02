@@ -10,6 +10,7 @@ use clap::Parser;
 mod soup;
 mod parse;
 mod dir_scan;
+mod utils;
 
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
 #[derive(Parser)]
@@ -46,7 +47,7 @@ fn main() {
         false => soup::SoupContexts::empty()
     };
     let result = dir_scan::scan(&target_dir).unwrap();
-    let scanned_contexts = soup::SoupContexts::from_paths(result);
+    let scanned_contexts = soup::SoupContexts::from_paths(result, path);
     write_soups(scanned_contexts, &output_path).unwrap();
 }
 

@@ -12,6 +12,7 @@ use crate::parse::{
     SoupSource,
     package_json::{PackageJson}
 };
+use crate::utils;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Soup {
@@ -51,7 +52,7 @@ impl SoupContexts {
         SoupContexts { contexts: collections::BTreeMap::new() }
     }
 
-    pub fn from_paths<>(paths: Vec<path::PathBuf>) -> SoupContexts {
+    pub fn from_paths<P: AsRef<path::Path>>(paths: Vec<path::PathBuf>, source_dir: P) -> SoupContexts {
         let mut soup_contexts: collections::BTreeMap<path::PathBuf, Vec<Soup>> = collections::BTreeMap::new();
         for path in paths {
             let file = fs::File::open(&path).unwrap();
@@ -67,6 +68,7 @@ impl SoupContexts {
                     }
                 }
             };
+            let path = utils::relative_path(path.as_ref(), source_dir.as_ref()).unwrap();
             soups.sort();
             soup_contexts.insert(path, soups);
         }
