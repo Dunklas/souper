@@ -14,12 +14,19 @@ use crate::parse::{
     package_json::{PackageJson}
 };
 
-#[derive(Serialize, Deserialize, Debug, cmp::Eq, cmp::PartialEq)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Soup {
     pub name: String,
     pub version: String,
     pub meta: collections::HashMap<String, serde_json::Value>
 }
+
+impl PartialEq for Soup {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.version == other.version
+    }
+}
+impl Eq for Soup {}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContext {
@@ -75,4 +82,28 @@ impl SoupContexts {
     pub fn vec(&self) -> &Vec<SoupContext> {
         &self.contexts
     } 
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn soup_equal() {
+        let s1 = Soup{
+            name: "some-dependency".to_owned(),
+            version: "1.0.0".to_owned(),
+            meta: collections::HashMap::new()
+        };
+        let mut meta = collections::HashMap::new();
+        meta.insert("requirement".to_owned(), json!("should do this and that"));
+        let s2 = Soup{
+            name: "some-dependency".to_owned(),
+            version: "1.0.0".to_owned(),
+            meta
+        };
+        assert_eq!(s1, s2);
+    }
 }

@@ -46,8 +46,8 @@ fn main() {
         false => soup::SoupContexts::empty()
     };
     let result = dir_scan::scan(&target_dir).unwrap();
-    let contexts = soup::SoupContexts::from_paths(result);
-    write_soups(contexts, &output_path).unwrap();
+    let current_contexts = soup::SoupContexts::from_paths(result);
+    write_soups(current_contexts, &output_path).unwrap();
 }
 
 fn write_soups<P: AsRef<path::Path>>(soup_contexts: soup::SoupContexts, path: P) -> Result<(), io::Error> {
