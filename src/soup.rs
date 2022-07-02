@@ -27,28 +27,36 @@ impl PartialEq for Soup {
 }
 impl Eq for Soup {}
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SoupContext {
-    pub path: path::PathBuf,
-    pub soups: Vec<Soup>
+impl PartialOrd for Soup {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for Soup {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.name.cmp(&other.name) {
+            std::cmp::Ordering::Equal => self.version.cmp(&other.version),
+            _ => self.name.cmp(&other.name)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContexts {
-    contexts: Vec<SoupContext>
+    contexts: collections::BTreeMap<path::PathBuf, Vec<Soup>>
 }
 
 impl SoupContexts {
     pub fn empty() -> SoupContexts {
-        SoupContexts { contexts: Vec::new() }
+        SoupContexts { contexts: collections::BTreeMap::new() }
     }
 
     pub fn from_paths<>(paths: Vec<path::PathBuf>) -> SoupContexts {
-        let mut soup_contexts: Vec<SoupContext> = Vec::new();
+        let mut soup_contexts: collections::BTreeMap<path::PathBuf, Vec<Soup>> = collections::BTreeMap::new();
         for path in paths {
             let file = fs::File::open(&path).unwrap();
             let reader = io::BufReader::new(file);
-            let soups = match path.file_name() {
+            let mut soups = match path.file_name() {
                 None => {
                     panic!("No filename for path: {:?}", path);
                 },
@@ -59,10 +67,8 @@ impl SoupContexts {
                     }
                 }
             };
-            soup_contexts.push(SoupContext {
-                path,
-                soups
-            })
+            soups.sort();
+            soup_contexts.insert(path, soups);
         }
         SoupContexts{
             contexts: soup_contexts
@@ -72,13 +78,13 @@ impl SoupContexts {
     pub fn from_output_file<P: AsRef<path::Path>>(file_path: P) -> SoupContexts {
         let output_file = fs::File::open(file_path).unwrap();
         let reader = io::BufReader::new(output_file);
-        let contexts: Vec<SoupContext> = serde_json::from_reader(reader).unwrap();
+        let contexts: collections::BTreeMap<path::PathBuf, Vec<Soup>> = serde_json::from_reader(reader).unwrap();
         SoupContexts {
             contexts
         }
     }
 
-    pub fn vec(&self) -> &Vec<SoupContext> {
+    pub fn contexts(&self) -> &collections::BTreeMap<path::PathBuf, Vec<Soup>> {
         &self.contexts
     } 
 }
