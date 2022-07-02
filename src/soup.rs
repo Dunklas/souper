@@ -21,19 +21,23 @@ pub struct Soup {
     pub meta: collections::HashMap<String, serde_json::Value>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContext {
     pub path: path::PathBuf,
     pub soups: Vec<Soup>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContexts {
     contexts: Vec<SoupContext>
 }
 
 impl SoupContexts {
-    pub fn from_paths(paths: Vec<path::PathBuf>) -> SoupContexts {
+    pub fn empty() -> SoupContexts {
+        SoupContexts { contexts: Vec::new() }
+    }
+
+    pub fn from_paths<>(paths: Vec<path::PathBuf>) -> SoupContexts {
         let mut soup_contexts: Vec<SoupContext> = Vec::new();
         for path in paths {
             let file = fs::File::open(&path).unwrap();
@@ -49,10 +53,22 @@ impl SoupContexts {
                     }
                 }
             };
-            soup_contexts.push(SoupContext { path, soups })
+            soup_contexts.push(SoupContext {
+                path,
+                soups
+            })
         }
         SoupContexts{
             contexts: soup_contexts
+        }
+    }
+
+    pub fn from_output_file<P: AsRef<path::Path>>(file_path: P) -> SoupContexts {
+        let output_file = fs::File::open(file_path).unwrap();
+        let reader = io::BufReader::new(output_file);
+        let contexts: Vec<SoupContext> = serde_json::from_reader(reader).unwrap();
+        SoupContexts {
+            contexts
         }
     }
 
