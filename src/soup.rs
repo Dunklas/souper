@@ -1,5 +1,4 @@
 use std::{
-    cmp,
     collections,
     fs,
     io,
@@ -105,5 +104,20 @@ mod tests {
             meta
         };
         assert_eq!(s1, s2);
+    }
+
+    #[test]
+    fn soup_not_equal() {
+        let s1 = Soup{
+            name: "some-dependency".to_owned(),
+            version: "1.0.0".to_owned(),
+            meta: collections::HashMap::new()
+        };
+        let s2 = Soup{
+            name: "some-dependency".to_owned(),
+            version: "1.0.1".to_owned(),
+            meta: collections::HashMap::new()
+        };
+        assert_ne!(s1, s2);
     }
 }
