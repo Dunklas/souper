@@ -13,3 +13,13 @@ jobs:
         run: cargo build --verbose
       - name: test
         run: cargo test --verbose
+
+  release-build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: echo "helo"
