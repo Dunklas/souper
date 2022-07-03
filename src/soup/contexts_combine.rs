@@ -3,31 +3,27 @@ use serde_json::{json, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
-    pub fn combine(first: SoupContexts, second: SoupContexts) -> SoupContexts {
-        if first.contexts == second.contexts {
+    pub fn combine(base: SoupContexts, other: SoupContexts) -> SoupContexts {
+        if base.contexts == other.contexts {
             return SoupContexts {
-                contexts: first.contexts,
+                contexts: base.contexts,
             };
         }
-        let mut contexts = first.contexts.clone();
-        for context_path in second.contexts.keys() {
-            if !first.contexts.contains_key(context_path) {
-                let soups = second.contexts.get(context_path).unwrap();
-                contexts.insert(context_path.clone(), soups.clone());
-                continue;
+        let mut result_contexts = base.contexts.clone();
+        other.contexts.iter()
+            .filter(|(path, _soups)| !base.contexts.contains_key(*path))
+            .for_each(|(path, soups)| {
+                result_contexts.insert(path.clone(), soups.clone());
+            });
+        base.contexts.iter().for_each(|(path, soups)| {
+            if !other.contexts.contains_key(path) {
+                result_contexts.remove(path);
+                return;
             }
-        }
-
-        for context_path in first.contexts.keys() {
-            if !second.contexts.contains_key(context_path) {
-                contexts.remove(context_path);
-                continue;
-            }
-            let soups = first.contexts.get(context_path).unwrap();
             let meta_by_name = soups.iter()
                 .map(|soup| (soup.name.clone(), soup.meta.clone()))
                 .collect::<HashMap<String, Value>>();
-            let other_soups = second.contexts.get(context_path).unwrap();
+            let other_soups = other.contexts.get(path).unwrap();
             let mut desired_soups = other_soups.iter()
                 .map(|soup| Soup{
                     name: soup.name.clone(),
@@ -38,11 +34,11 @@ impl SoupContexts {
                     }
                 })
                 .collect::<BTreeSet<Soup>>();
-            let target_soups = contexts.get_mut(context_path).unwrap();
+            let target_soups = result_contexts.get_mut(path).unwrap();
             target_soups.clear();
             target_soups.append(&mut desired_soups);
-        }
-        SoupContexts { contexts }
+        });
+        SoupContexts { contexts: result_contexts }
     }
 }
 
