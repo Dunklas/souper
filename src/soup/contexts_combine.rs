@@ -1,5 +1,4 @@
 use crate::soup::model::{Soup, SoupContexts};
-use std::path::PathBuf;
 
 impl SoupContexts {
     pub fn combine(first: SoupContexts, second: SoupContexts) -> SoupContexts {
@@ -9,35 +8,45 @@ impl SoupContexts {
             };
         }
         let mut contexts = first.contexts.clone();
-        let keys_to_add: Vec<&PathBuf> = second
-            .contexts
-            .iter()
-            .map(|(p, _soups)| p)
-            .filter(|key| !first.contexts.contains_key(*key))
-            .collect();
-        let keys_to_remove: Vec<&PathBuf> = first
-            .contexts
-            .iter()
-            .map(|(p, _soups)| p)
-            .filter(|key| !second.contexts.contains_key(*key))
-            .collect();
-        for key in keys_to_remove {
-            contexts.remove(key);
+        for context_path in second.contexts.keys() {
+            if !first.contexts.contains_key(context_path) {
+                let soups = second.contexts.get(context_path).unwrap();
+                contexts.insert(context_path.clone(), soups.clone());
+                continue;
+            }
         }
-        for key in keys_to_add {
-            let soups = second.contexts.get(key).unwrap();
-            contexts.insert(key.to_owned(), soups.clone());
+
+        for context_path in first.contexts.keys() {
+            if !second.contexts.contains_key(context_path) {
+                contexts.remove(context_path);
+                continue;
+            }
+            let soups = first.contexts.get(context_path).unwrap();
+            let other_soups = second.contexts.get(context_path).unwrap();
+            let target_soups = contexts.get_mut(context_path).unwrap();
+            if soups.len() < other_soups.len() {
+                let missing: Vec<&Soup> = other_soups
+                    .iter()
+                    .filter(|soup| soups.iter().find(|x| x == soup) == None)
+                    .collect();
+                for s in missing {
+                    target_soups.push(s.clone());
+                }
+            }
+            if soups.len() > other_soups.len() {
+                target_soups.retain(|x| other_soups.iter().find(|y| x == *y) != None);
+            }
         }
         // Update soup versions
-        // Add and remove individual soups
         SoupContexts { contexts }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
     use super::*;
+    use std::collections::{BTreeMap, HashMap};
+    use std::path::PathBuf;
 
     #[test]
     fn combine_add_context() {
@@ -58,6 +67,7 @@ mod tests {
         };
         let result = SoupContexts::combine(first, second);
         let expected_key: PathBuf = ["src", "package.json"].iter().collect();
+        assert_eq!(1, result.contexts.len());
         assert_eq!(true, result.contexts.contains_key(&expected_key));
     }
 
@@ -80,5 +90,95 @@ mod tests {
         };
         let result = SoupContexts::combine(first, second);
         assert_eq!(true, result.contexts.is_empty());
+    }
+
+    #[test]
+    fn combine_added_soup() {
+        let first = SoupContexts {
+            contexts: [(
+                ["src", "package.json"].iter().collect::<PathBuf>(),
+                vec![Soup {
+                    name: "some-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: HashMap::new(),
+                }],
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+        };
+        let second = SoupContexts {
+            contexts: [(
+                ["src", "package.json"].iter().collect::<PathBuf>(),
+                vec![
+                    Soup {
+                        name: "some-dep".to_owned(),
+                        version: "1.0.0".to_owned(),
+                        meta: HashMap::new(),
+                    },
+                    Soup {
+                        name: "some-other-dep".to_owned(),
+                        version: "1.0.0".to_owned(),
+                        meta: HashMap::new(),
+                    },
+                ],
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+        };
+
+        let result = SoupContexts::combine(first, second);
+        assert_eq!(1, result.contexts.len());
+        let soups = result
+            .contexts
+            .get(&["src", "package.json"].iter().collect::<PathBuf>())
+            .unwrap();
+        assert_eq!(2, soups.len());
+    }
+
+    #[test]
+    fn combine_removed_soup() {
+        let first = SoupContexts {
+            contexts: [(
+                ["src", "package.json"].iter().collect::<PathBuf>(),
+                vec![
+                    Soup {
+                        name: "some-dep".to_owned(),
+                        version: "1.0.0".to_owned(),
+                        meta: HashMap::new(),
+                    },
+                    Soup {
+                        name: "some-other-dep".to_owned(),
+                        version: "1.0.0".to_owned(),
+                        meta: HashMap::new(),
+                    },
+                ],
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+        };
+        let second = SoupContexts {
+            contexts: [(
+                ["src", "package.json"].iter().collect::<PathBuf>(),
+                vec![Soup {
+                    name: "some-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: HashMap::new(),
+                }],
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+        };
+
+        let result = SoupContexts::combine(first, second);
+        assert_eq!(1, result.contexts.len());
+        let soups = result
+            .contexts
+            .get(&["src", "package.json"].iter().collect::<PathBuf>())
+            .unwrap();
+        assert_eq!(1, soups.len());
     }
 }
