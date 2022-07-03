@@ -45,8 +45,9 @@ impl SoupContexts {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
+    use serde_json::json;
 
     #[test]
     fn combine_add_context() {
@@ -59,7 +60,7 @@ mod tests {
             vec![Soup {
                 name: "some-dep".to_owned(),
                 version: "1.0.0".to_owned(),
-                meta: HashMap::new(),
+                meta: json!("{}")
             }],
         );
         let second = SoupContexts {
@@ -79,7 +80,7 @@ mod tests {
             vec![Soup {
                 name: "some-dep".to_owned(),
                 version: "1.0.0".to_owned(),
-                meta: HashMap::new(),
+                meta: json!("{}")
             }],
         );
         let first = SoupContexts {
@@ -100,7 +101,7 @@ mod tests {
                 vec![Soup {
                     name: "some-dep".to_owned(),
                     version: "1.0.0".to_owned(),
-                    meta: HashMap::new(),
+                    meta: json!("{}")
                 }],
             )]
             .iter()
@@ -114,12 +115,12 @@ mod tests {
                     Soup {
                         name: "some-dep".to_owned(),
                         version: "1.0.0".to_owned(),
-                        meta: HashMap::new(),
+                        meta: json!("{}")
                     },
                     Soup {
                         name: "some-other-dep".to_owned(),
                         version: "1.0.0".to_owned(),
-                        meta: HashMap::new(),
+                        meta: json!("{}")
                     },
                 ],
             )]
@@ -146,12 +147,12 @@ mod tests {
                     Soup {
                         name: "some-dep".to_owned(),
                         version: "1.0.0".to_owned(),
-                        meta: HashMap::new(),
+                        meta: json!("{}")
                     },
                     Soup {
                         name: "some-other-dep".to_owned(),
                         version: "1.0.0".to_owned(),
-                        meta: HashMap::new(),
+                        meta: json!("{}")
                     },
                 ],
             )]
@@ -165,7 +166,7 @@ mod tests {
                 vec![Soup {
                     name: "some-dep".to_owned(),
                     version: "1.0.0".to_owned(),
-                    meta: HashMap::new(),
+                    meta: json!("{}")
                 }],
             )]
             .iter()

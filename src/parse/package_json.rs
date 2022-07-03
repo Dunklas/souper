@@ -3,6 +3,7 @@ use std::{
     io,
 };
 use serde::Deserialize;
+use serde_json::json;
 use crate::soup::model::Soup;
 use super::SoupSource;
 
@@ -20,7 +21,7 @@ impl <R> SoupSource<R> for PackageJson where R: io::Read {
             .map(|(key, value)| Soup {
                 name: key,
                 version: value,
-                meta: collections::HashMap::new()
+                meta: json!("{}")
             })
             .collect::<Vec<Soup>>();
         return soups;
@@ -43,7 +44,7 @@ mod tests {
         let expected_soup = Soup {
             name: "some-lib".to_owned(),
             version: "^1.0.0".to_owned(),
-            meta: collections::HashMap::new()
+            meta: json!("{}")
         };
         assert_eq!(expected_soup, soups[0]);
     }
@@ -59,8 +60,8 @@ mod tests {
         let soups = PackageJson::soups(content);
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: collections::HashMap::new() },
-            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: collections::HashMap::new() }
+            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!("{}") },
+            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!("{}") }
         ];
         assert_eq!(true, soups.contains(&expected_soups[0]));
         assert_eq!(true, soups.contains(&expected_soups[1]));
