@@ -10,11 +10,11 @@ use serde::{
 };
 use crate::parse::{
     SoupSource,
-    package_json::{PackageJson}
+    package_json::PackageJson
 };
 use crate::utils;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Soup {
     pub name: String,
     pub version: String,
@@ -88,12 +88,42 @@ impl SoupContexts {
 
     pub fn contexts(&self) -> &collections::BTreeMap<path::PathBuf, Vec<Soup>> {
         &self.contexts
-    } 
+    }
+
+    pub fn combine(first: SoupContexts, second: SoupContexts) -> SoupContexts {
+        if first.contexts == second.contexts {
+            return SoupContexts{
+                contexts: first.contexts
+            };
+        }
+        let mut contexts = first.contexts.clone();
+        let keys_to_add: Vec<&path::PathBuf> = second.contexts.iter()
+            .map(|(p, _soups)| p)
+            .filter(|key| !first.contexts.contains_key(*key))
+            .collect();
+        let keys_to_remove: Vec<&path::PathBuf> = first.contexts.iter()
+            .map(|(p, _soups)| p)
+            .filter(|key| !second.contexts.contains_key(*key))
+            .collect();
+        for key in keys_to_remove {
+            contexts.remove(key);
+        }
+        for key in keys_to_add {
+            let soups = second.contexts.get(key).unwrap();
+            contexts.insert(key.to_owned(), soups.clone());
+        }
+        // Update soup versions
+        // Add and remove individual soups
+        SoupContexts {
+            contexts
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+    use collections::{HashMap, BTreeMap};
 
     use super::*;
 
@@ -102,9 +132,9 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: collections::HashMap::new()
+            meta: HashMap::new()
         };
-        let mut meta = collections::HashMap::new();
+        let mut meta = HashMap::new();
         meta.insert("requirement".to_owned(), json!("should do this and that"));
         let s2 = Soup{
             name: "some-dependency".to_owned(),
@@ -119,13 +149,46 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: collections::HashMap::new()
+            meta: HashMap::new()
         };
         let s2 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.1".to_owned(),
-            meta: collections::HashMap::new()
+            meta: HashMap::new()
         };
         assert_ne!(s1, s2);
+    }
+
+    #[test]
+    fn combine_add_context() {
+        let first = SoupContexts{
+            contexts: BTreeMap::new()
+        };
+        let mut second_contexts: BTreeMap<path::PathBuf, Vec<Soup>> = BTreeMap::new();
+        second_contexts.insert(["src", "package.json"].iter().collect(), vec![
+            Soup{ name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: HashMap::new()}
+        ]);
+        let second = SoupContexts{
+            contexts: second_contexts
+        };
+        let result = SoupContexts::combine(first, second);
+        let expected_key: path::PathBuf = ["src", "package.json"].iter().collect();
+        assert_eq!(true, result.contexts.contains_key(&expected_key));
+    }
+
+    #[test]
+    fn combine_remove_context() {
+        let mut first_contexts: BTreeMap<path::PathBuf, Vec<Soup>> = BTreeMap::new();
+        first_contexts.insert(["src", "package.json"].iter().collect(), vec![
+            Soup{ name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: HashMap::new()}
+        ]);
+        let first = SoupContexts{
+            contexts: first_contexts
+        };
+        let second = SoupContexts{
+            contexts: BTreeMap::new()
+        };
+        let result = SoupContexts::combine(first, second);
+        assert_eq!(true, result.contexts.is_empty());
     }
 }

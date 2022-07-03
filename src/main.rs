@@ -42,13 +42,15 @@ fn main() {
     if output_path.is_dir() {
         panic!("Invalid output file: {:?}", output_path);
     }
-    let _current_contexts = match output_path.is_file() {
+    let current_contexts = match output_path.is_file() {
         true => soup::SoupContexts::from_output_file(&output_path),
         false => soup::SoupContexts::empty()
     };
     let result = dir_scan::scan(&target_dir).unwrap();
     let scanned_contexts = soup::SoupContexts::from_paths(result, path);
-    write_soups(scanned_contexts, &output_path).unwrap();
+
+    let combined_contexts = soup::SoupContexts::combine(current_contexts, scanned_contexts);
+    write_soups(combined_contexts, &output_path).unwrap();
 }
 
 fn write_soups<P: AsRef<path::Path>>(soup_contexts: soup::SoupContexts, path: P) -> Result<(), io::Error> {
