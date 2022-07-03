@@ -2,7 +2,8 @@ use std::{
     collections::{
         BTreeMap,
         BTreeSet
-    }
+    },
+    fmt
 };
 use serde::{
     Deserialize,
@@ -46,6 +47,22 @@ pub struct SoupContexts {
 impl SoupContexts {
     pub fn empty() -> SoupContexts {
         SoupContexts { contexts: BTreeMap::new() }
+    }
+}
+
+pub struct SouperIoError {
+    pub message: String
+}
+
+impl fmt::Display for SouperIoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "IO error: {}", self.message)
+    }
+}
+
+impl fmt::Debug for SouperIoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ file: {}, line: {} }}", file!(), line!())
     }
 }
 

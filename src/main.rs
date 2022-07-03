@@ -45,14 +45,34 @@ fn main() {
         panic!("Invalid output file: {:?}", output_path);
     }
     let current_contexts = match output_path.is_file() {
-        true => SoupContexts::from_output_file(&output_path),
+        true => match SoupContexts::from_output_file(&output_path) {
+            Ok(contexts) => contexts,
+            Err(e) => {
+                panic!("{}", e);
+            }
+        }
         false => SoupContexts::empty()
     };
-    let result = dir_scan::scan(&target_dir).unwrap();
-    let scanned_contexts = SoupContexts::from_paths(result, path);
+    let result = match dir_scan::scan(&target_dir) {
+        Ok(result) => result,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
+    let scanned_contexts = match SoupContexts::from_paths(result, path) {
+        Ok(contexts) => contexts,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
 
     let combined_contexts = SoupContexts::combine(current_contexts, scanned_contexts);
-    write_soups(combined_contexts, &output_path).unwrap();
+    match write_soups(combined_contexts, &output_path) {
+        Err(e) => {
+            panic!("{}", e);
+        },
+        _ => {}
+    }
 }
 
 fn write_soups<P: AsRef<path::Path>>(soup_contexts: SoupContexts, path: P) -> Result<(), io::Error> {
