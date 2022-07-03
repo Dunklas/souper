@@ -45,10 +45,25 @@ impl SoupContexts {
                         panic!("No parser found for: {:?}", filename)
                     }
             };
-            let path = utils::relative_path(path.as_ref(), source_dir.as_ref()).unwrap();
-            let path = path.into_os_string().into_string().unwrap();
-            let path = path.replace("\\", "/");
-            soup_contexts.insert(path, soups);
+            let relative_path = match utils::relative_path(path.as_ref(), source_dir.as_ref()) {
+                Ok(relative_path) => relative_path,
+                Err(_e) => {
+                    return Err(SouperIoError {
+                        message: format!("Not able to obtain relative path for: {} (from {})", path.display(), source_dir.as_ref().display())
+                    });
+                }
+            };
+            let relative_path = relative_path.into_os_string();
+            let relative_path = match relative_path.into_string() {
+                Ok(path_string) => path_string,
+                Err(_) => {
+                    return Err(SouperIoError{
+                        message: format!("Not able to convert relative path to string")
+                    })
+                }
+            };
+            let relative_path = relative_path.replace("\\", "/");
+            soup_contexts.insert(relative_path, soups);
         }
         Ok(SoupContexts {
             contexts: soup_contexts,
