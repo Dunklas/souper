@@ -1,5 +1,5 @@
 use std::{
-    collections,
+    collections::{HashMap, BTreeSet},
     io,
 };
 use serde::Deserialize;
@@ -11,11 +11,11 @@ pub struct PackageJson {}
 
 #[derive(Deserialize)]
 struct Content {
-    dependencies: collections::HashMap<String, String>
+    dependencies: HashMap<String, String>
 }
 
 impl <R> SoupSource<R> for PackageJson where R: io::Read {
-    fn soups(reader: R) -> Vec<Soup> {
+    fn soups(reader: R) -> BTreeSet<Soup> {
         let content: Content = serde_json::from_reader(reader).unwrap();
         let soups = content.dependencies.into_iter()
             .map(|(key, value)| Soup {
@@ -23,7 +23,7 @@ impl <R> SoupSource<R> for PackageJson where R: io::Read {
                 version: value,
                 meta: json!("{}")
             })
-            .collect::<Vec<Soup>>();
+            .collect::<BTreeSet<Soup>>();
         return soups;
     }
 }
@@ -46,7 +46,7 @@ mod tests {
             version: "^1.0.0".to_owned(),
             meta: json!("{}")
         };
-        assert_eq!(expected_soup, soups[0]);
+        assert_eq!(true, soups.contains(&expected_soup));
     }
 
     #[test]
@@ -62,8 +62,7 @@ mod tests {
         let expected_soups = vec![
             Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!("{}") },
             Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!("{}") }
-        ];
-        assert_eq!(true, soups.contains(&expected_soups[0]));
-        assert_eq!(true, soups.contains(&expected_soups[1]));
+        ].into_iter().collect::<BTreeSet<Soup>>();
+        assert_eq!(expected_soups, soups);
     }
 }

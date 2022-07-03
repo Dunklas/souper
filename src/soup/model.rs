@@ -1,5 +1,8 @@
 use std::{
-    collections
+    collections::{
+        BTreeMap,
+        BTreeSet
+    }
 };
 use serde::{
     Deserialize,
@@ -37,12 +40,12 @@ impl Ord for Soup {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContexts {
-    pub contexts: collections::BTreeMap<String, Vec<Soup>>
+    pub contexts: BTreeMap<String, BTreeSet<Soup>>
 }
 
 impl SoupContexts {
     pub fn empty() -> SoupContexts {
-        SoupContexts { contexts: collections::BTreeMap::new() }
+        SoupContexts { contexts: BTreeMap::new() }
     }
 }
 
