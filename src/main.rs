@@ -12,6 +12,8 @@ mod parse;
 mod dir_scan;
 mod utils;
 
+use soup::model::SoupContexts;
+
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
 #[derive(Parser)]
 struct Cli {
@@ -43,18 +45,18 @@ fn main() {
         panic!("Invalid output file: {:?}", output_path);
     }
     let current_contexts = match output_path.is_file() {
-        true => soup::SoupContexts::from_output_file(&output_path),
-        false => soup::SoupContexts::empty()
+        true => SoupContexts::from_output_file(&output_path),
+        false => SoupContexts::empty()
     };
     let result = dir_scan::scan(&target_dir).unwrap();
-    let scanned_contexts = soup::SoupContexts::from_paths(result, path);
+    let scanned_contexts = SoupContexts::from_paths(result, path);
 
-    let combined_contexts = soup::SoupContexts::combine(current_contexts, scanned_contexts);
+    let combined_contexts = SoupContexts::combine(current_contexts, scanned_contexts);
     write_soups(combined_contexts, &output_path).unwrap();
 }
 
-fn write_soups<P: AsRef<path::Path>>(soup_contexts: soup::SoupContexts, path: P) -> Result<(), io::Error> {
+fn write_soups<P: AsRef<path::Path>>(soup_contexts: SoupContexts, path: P) -> Result<(), io::Error> {
     let mut output_file = fs::File::create(path)?;
-    output_file.write_all(serde_json::to_string_pretty(soup_contexts.contexts()).unwrap().as_bytes())?;
+    output_file.write_all(serde_json::to_string_pretty(&soup_contexts.contexts).unwrap().as_bytes())?;
     Ok(())
 }

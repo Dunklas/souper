@@ -2,8 +2,8 @@ use std::{
     collections,
     io,
 };
-use serde::{Deserialize};
-use crate::soup;
+use serde::Deserialize;
+use crate::soup::model::Soup;
 use super::SoupSource;
 
 pub struct PackageJson {}
@@ -14,15 +14,15 @@ struct Content {
 }
 
 impl <R> SoupSource<R> for PackageJson where R: io::Read {
-    fn soups(reader: R) -> Vec<soup::Soup> {
+    fn soups(reader: R) -> Vec<Soup> {
         let content: Content = serde_json::from_reader(reader).unwrap();
         let soups = content.dependencies.into_iter()
-            .map(|(key, value)| soup::Soup {
+            .map(|(key, value)| Soup {
                 name: key,
                 version: value,
                 meta: collections::HashMap::new()
             })
-            .collect::<Vec<soup::Soup>>();
+            .collect::<Vec<Soup>>();
         return soups;
     }
 }
@@ -40,7 +40,7 @@ mod tests {
         }".as_bytes();
         let soups = PackageJson::soups(content);
         assert_eq!(1, soups.len());
-        let expected_soup = soup::Soup {
+        let expected_soup = Soup {
             name: "some-lib".to_owned(),
             version: "^1.0.0".to_owned(),
             meta: collections::HashMap::new()
@@ -59,8 +59,8 @@ mod tests {
         let soups = PackageJson::soups(content);
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            soup::Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: collections::HashMap::new() },
-            soup::Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: collections::HashMap::new() }
+            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: collections::HashMap::new() },
+            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: collections::HashMap::new() }
         ];
         assert_eq!(true, soups.contains(&expected_soups[0]));
         assert_eq!(true, soups.contains(&expected_soups[1]));
