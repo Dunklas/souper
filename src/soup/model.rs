@@ -77,7 +77,7 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!("{}")
+            meta: json!({})
         };
         let s2 = Soup{
             name: "some-dependency".to_owned(),
@@ -92,12 +92,12 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!("{}")
+            meta: json!({})
         };
         let s2 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.1".to_owned(),
-            meta: json!("{}")
+            meta: json!({})
         };
         assert_ne!(s1, s2);
     }

@@ -30,7 +30,7 @@ impl SoupContexts {
                     version: soup.version.clone(),
                     meta: match meta_by_name.get(&soup.name) {
                         Some(meta) => meta.clone(),
-                        None => json!("{}"),
+                        None => json!({}),
                     }
                 })
                 .collect::<BTreeSet<Soup>>();
@@ -67,7 +67,7 @@ mod tests {
     fn combine_add_context() {
         let first = empty_contexts();
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
 
         let result = SoupContexts::combine(first, second);
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn combine_remove_context() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
         let second = empty_contexts();
 
@@ -89,11 +89,11 @@ mod tests {
     #[test]
     fn combine_added_soup() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) },
+            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
         
         let result = SoupContexts::combine(first, second);
@@ -105,11 +105,11 @@ mod tests {
     #[test]
     fn combine_removed_soup() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) },
+            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({}) }
         ]);
         
         let result = SoupContexts::combine(first, second);
@@ -124,7 +124,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{\"some-meta\": \"some-value\"}")}
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: json!("{}") }
+            Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: json!({}) }
         ]);
 
         let result = SoupContexts::combine(first, second);

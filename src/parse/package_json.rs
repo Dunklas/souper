@@ -21,7 +21,7 @@ impl <R> SoupSource<R> for PackageJson where R: io::Read {
             .map(|(key, value)| Soup {
                 name: key,
                 version: value,
-                meta: json!("{}")
+                meta: json!({})
             })
             .collect::<BTreeSet<Soup>>();
         return soups;
@@ -44,7 +44,7 @@ mod tests {
         let expected_soup = Soup {
             name: "some-lib".to_owned(),
             version: "^1.0.0".to_owned(),
-            meta: json!("{}")
+            meta: json!({})
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -60,8 +60,8 @@ mod tests {
         let soups = PackageJson::soups(content);
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!("{}") },
-            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!("{}") }
+            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!({}) },
+            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!({}) }
         ].into_iter().collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
     }
