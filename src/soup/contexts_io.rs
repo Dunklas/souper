@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
@@ -89,5 +89,26 @@ impl SoupContexts {
             }
         };
         Ok(SoupContexts { contexts })
+    }
+
+    pub fn write_to_file<P: AsRef<Path>>(&self, file_path: P) -> Result<(), SouperIoError> {
+        let mut output_file = match File::create(&file_path) {
+            Ok(file) => file,
+            Err(e) => return Err(SouperIoError{
+                message: format!("Not able to create file: {} ({})", file_path.as_ref().display(), e)
+            })
+        };
+        let json = match serde_json::to_string_pretty(&self.contexts) {
+            Ok(json) => json,
+            Err(e) => return Err(SouperIoError{
+                message: format!("Not able to serialize to json: {}", e)
+            })
+        };
+        match output_file.write_all(json.as_bytes()) {
+            Ok(_x) => Ok(()),
+            Err(e) => return Err(SouperIoError{
+                message: format!("Not able to write to file: {} ({})", file_path.as_ref().display(), e)
+            }),
+        }
     }
 }

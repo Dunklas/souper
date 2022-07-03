@@ -1,8 +1,5 @@
-use std::io::Write;
 use std::{
     env,
-    fs,
-    io,
     path
 };
 use clap::Parser;
@@ -67,16 +64,10 @@ fn main() {
     };
 
     let combined_contexts = SoupContexts::combine(current_contexts, scanned_contexts);
-    match write_soups(combined_contexts, &output_path) {
+    match combined_contexts.write_to_file(&output_path) {
         Err(e) => {
             panic!("{}", e);
         },
         _ => {}
     }
-}
-
-fn write_soups<P: AsRef<path::Path>>(soup_contexts: SoupContexts, path: P) -> Result<(), io::Error> {
-    let mut output_file = fs::File::create(path)?;
-    output_file.write_all(serde_json::to_string_pretty(&soup_contexts.contexts).unwrap().as_bytes())?;
-    Ok(())
 }
