@@ -15,7 +15,7 @@ impl SoupContexts {
         paths: Vec<PathBuf>,
         source_dir: P,
     ) -> SoupContexts {
-        let mut soup_contexts: BTreeMap<PathBuf, Vec<Soup>> =
+        let mut soup_contexts: BTreeMap<String, Vec<Soup>> =
             BTreeMap::new();
         for path in paths {
             let file = File::open(&path).unwrap();
@@ -32,6 +32,8 @@ impl SoupContexts {
                 },
             };
             let path = utils::relative_path(path.as_ref(), source_dir.as_ref()).unwrap();
+            let path = path.into_os_string().into_string().unwrap();
+            let path = path.replace("\\", "/");
             soups.sort();
             soup_contexts.insert(path, soups);
         }
@@ -43,7 +45,7 @@ impl SoupContexts {
     pub fn from_output_file<P: AsRef<Path>>(file_path: P) -> SoupContexts {
         let output_file = File::open(file_path).unwrap();
         let reader = BufReader::new(output_file);
-        let contexts: BTreeMap<PathBuf, Vec<Soup>> =
+        let contexts: BTreeMap<String, Vec<Soup>> =
             serde_json::from_reader(reader).unwrap();
         SoupContexts { contexts }
     }

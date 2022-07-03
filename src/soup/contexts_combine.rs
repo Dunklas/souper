@@ -46,7 +46,6 @@ impl SoupContexts {
 mod tests {
     use super::*;
     use std::collections::BTreeMap;
-    use std::path::PathBuf;
     use serde_json::json;
 
     #[test]
@@ -54,9 +53,9 @@ mod tests {
         let first = SoupContexts {
             contexts: BTreeMap::new(),
         };
-        let mut second_contexts: BTreeMap<PathBuf, Vec<Soup>> = BTreeMap::new();
+        let mut second_contexts: BTreeMap<String, Vec<Soup>> = BTreeMap::new();
         second_contexts.insert(
-            ["src", "package.json"].iter().collect(),
+            "src/package.json".to_owned(),
             vec![Soup {
                 name: "some-dep".to_owned(),
                 version: "1.0.0".to_owned(),
@@ -67,16 +66,15 @@ mod tests {
             contexts: second_contexts,
         };
         let result = SoupContexts::combine(first, second);
-        let expected_key: PathBuf = ["src", "package.json"].iter().collect();
         assert_eq!(1, result.contexts.len());
-        assert_eq!(true, result.contexts.contains_key(&expected_key));
+        assert_eq!(true, result.contexts.contains_key("src/package.json"));
     }
 
     #[test]
     fn combine_remove_context() {
-        let mut first_contexts: BTreeMap<PathBuf, Vec<Soup>> = BTreeMap::new();
+        let mut first_contexts: BTreeMap<String, Vec<Soup>> = BTreeMap::new();
         first_contexts.insert(
-            ["src", "package.json"].iter().collect(),
+            "src/package.json".to_owned(),
             vec![Soup {
                 name: "some-dep".to_owned(),
                 version: "1.0.0".to_owned(),
@@ -97,7 +95,7 @@ mod tests {
     fn combine_added_soup() {
         let first = SoupContexts {
             contexts: [(
-                ["src", "package.json"].iter().collect::<PathBuf>(),
+                "src/package.json".to_owned(),
                 vec![Soup {
                     name: "some-dep".to_owned(),
                     version: "1.0.0".to_owned(),
@@ -110,7 +108,7 @@ mod tests {
         };
         let second = SoupContexts {
             contexts: [(
-                ["src", "package.json"].iter().collect::<PathBuf>(),
+                "src/package.json".to_owned(),
                 vec![
                     Soup {
                         name: "some-dep".to_owned(),
@@ -133,7 +131,7 @@ mod tests {
         assert_eq!(1, result.contexts.len());
         let soups = result
             .contexts
-            .get(&["src", "package.json"].iter().collect::<PathBuf>())
+            .get("src/package.json")
             .unwrap();
         assert_eq!(2, soups.len());
     }
@@ -142,7 +140,7 @@ mod tests {
     fn combine_removed_soup() {
         let first = SoupContexts {
             contexts: [(
-                ["src", "package.json"].iter().collect::<PathBuf>(),
+                "src/package.json".to_owned(),
                 vec![
                     Soup {
                         name: "some-dep".to_owned(),
@@ -162,7 +160,7 @@ mod tests {
         };
         let second = SoupContexts {
             contexts: [(
-                ["src", "package.json"].iter().collect::<PathBuf>(),
+                "src/package.json".to_owned(),
                 vec![Soup {
                     name: "some-dep".to_owned(),
                     version: "1.0.0".to_owned(),
@@ -178,7 +176,7 @@ mod tests {
         assert_eq!(1, result.contexts.len());
         let soups = result
             .contexts
-            .get(&["src", "package.json"].iter().collect::<PathBuf>())
+            .get("src/package.json")
             .unwrap();
         assert_eq!(1, soups.len());
     }

@@ -1,6 +1,5 @@
 use std::{
-    collections,
-    path
+    collections
 };
 use serde::{
     Deserialize,
@@ -38,15 +37,13 @@ impl Ord for Soup {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContexts {
-    pub contexts: collections::BTreeMap<path::PathBuf, Vec<Soup>>
+    pub contexts: collections::BTreeMap<String, Vec<Soup>>
 }
 
 impl SoupContexts {
     pub fn empty() -> SoupContexts {
         SoupContexts { contexts: collections::BTreeMap::new() }
     }
-
-    
 }
 
 #[cfg(test)]
