@@ -17,9 +17,14 @@ struct Cli {
     /// Output file to print report in
     #[clap(short = 'o', long = "output-file", parse(from_os_str))]
     file: path::PathBuf,
+
     /// Directory to scan
     #[clap(short = 'd', long = "directory", parse(from_os_str))]
-    target_dir: Option<path::PathBuf>
+    target_dir: Option<path::PathBuf>,
+
+    /// Directory to exclude
+    #[clap(short = 'e', long = "exclude-directory", parse(from_os_str))]
+    exclude_dirs: Vec<path::PathBuf>
 }
 
 fn main() {
@@ -41,6 +46,8 @@ fn main() {
     if output_path.is_dir() {
         panic!("Invalid output file: {:?}", output_path);
     }
+    let exclude_dirs = args.exclude_dirs;
+
     let current_contexts = match output_path.is_file() {
         true => match SoupContexts::from_output_file(&output_path) {
             Ok(contexts) => contexts,
@@ -50,7 +57,7 @@ fn main() {
         }
         false => SoupContexts::empty()
     };
-    let result = match dir_scan::scan(&target_dir) {
+    let result = match dir_scan::scan(&target_dir, &exclude_dirs) {
         Ok(result) => result,
         Err(e) => {
             panic!("{}", e);
