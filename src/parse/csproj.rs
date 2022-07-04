@@ -3,7 +3,10 @@ use crate::soup::model::Soup;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde_json::json;
-use std::{collections::BTreeSet, io};
+use std::{
+    collections::{BTreeSet, HashMap},
+    io
+};
 
 pub struct CsProj {}
 
@@ -22,22 +25,20 @@ where
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => match e.name() {
                     b"PackageReference" => {
-                        let mut name = "".to_owned();
-                        let mut version = "".to_owned();
-                        for attr in e.attributes() {
-                            let attribute = attr.unwrap();
-                            let value = String::from_utf8(attribute.value.to_vec()).unwrap();
-                            match attribute.key {
-                                b"Version" => version = value,
-                                b"Include" => name = value,
-                                _ => {}
-                            }
+                        let mut attributes_by_key = e.attributes()
+                            .filter_map(|attribute| attribute.ok())
+                            .map(|attribute| (
+                                String::from_utf8(attribute.key.to_vec()).unwrap(),
+                                String::from_utf8(attribute.value.to_vec()).unwrap()
+                            ))
+                            .collect::<HashMap<String, String>>();
+                        if attributes_by_key.contains_key("Include") && attributes_by_key.contains_key("Version") {
+                            soups.insert(Soup {
+                                name: attributes_by_key.remove("Include").unwrap(),
+                                version: attributes_by_key.remove("Version").unwrap(),
+                                meta: json!({})
+                            });
                         }
-                        soups.insert(Soup {
-                            name,
-                            version,
-                            meta: json!({}),
-                        });
                     }
                     _ => {}
                 },
