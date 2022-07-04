@@ -7,3 +7,4 @@ pub trait SoupSource<R: io::Read> {
 }
 
 pub mod package_json;
+pub mod csproj;
