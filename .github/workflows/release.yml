@@ -32,3 +32,5 @@ jobs:
       - run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
       - run: |
           gh release upload ${{ github.ref }} target/${TARGET}/release/souper-${TARGET}.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
