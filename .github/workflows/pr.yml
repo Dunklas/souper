@@ -17,15 +17,3 @@ jobs:
         run: rustup component add clippy
       - name: lint
         run: cargo clippy -- -D warnings
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: rustup target add x86_64-pc-windows-msvc
-      - run: cargo build --release --target x86_64-pc-windows-msvc
-      - run: |
-          ls target/x86_64-pc-windows-msvc/release
-          compress-archive -path "target/x86_64-pc-windows-msvc/release/souper.exe" "target/x86_64-pc-windows-msvc/release/souper-x86_64-pc-windows-msvc.zip" -compressionlevel optimal
-          ls target/x86_64-pc-windows-msvc/release
-          $tag="refs/tags/v0.0.1" -replace "refs/tags/", ""
-          echo $tag

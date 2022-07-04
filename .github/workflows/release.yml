@@ -22,16 +22,32 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-latest
             target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     env:
       TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v2
-      - run: rustup target add $TARGET
-      - run: cargo build --release --target $TARGET
-      - run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
-      - run: |
+      - name: add target
+        run: rustup target add $TARGET
+      - name: build
+        run: cargo build --release --target $TARGET
+      - name: package
+        if: ${{ matrix.os }} != windows-latest
+        run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
+      - name: package
+        if: ${{ matrix.os }} == windows-latest
+        run: compress-archive -path "target/$TARGET/release/souper.exe" "target/$TARGET/release/souper-$TARGET.zip" -compressionlevel optimal
+      - name: upload
+        if: ${{ matrix.os }} != windows-latest
+        run: |
           TAG=$(echo ${{ github.ref }} | sed 's#refs/tags/##')
           gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.tar.gz
+      - name: upload
+        if: ${{ matrix.os }} == windows-latest
+        run: |
+          $TAG=${{ github.ref }} -replace "refs/tags/", ""
+          gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
