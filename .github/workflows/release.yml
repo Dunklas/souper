@@ -9,7 +9,6 @@ on:
 
 jobs:
   create-release:
-    id: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: softprops/action-gh-release@v1
