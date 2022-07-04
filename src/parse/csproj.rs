@@ -23,24 +23,21 @@ where
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match e.name() {
-                    b"PackageReference" => {
-                        let mut attributes_by_key = e.attributes()
-                            .filter_map(|attribute| attribute.ok())
-                            .map(|attribute| (
-                                String::from_utf8(attribute.key.to_vec()).unwrap(),
-                                String::from_utf8(attribute.value.to_vec()).unwrap()
-                            ))
-                            .collect::<HashMap<String, String>>();
-                        if attributes_by_key.contains_key("Include") && attributes_by_key.contains_key("Version") {
-                            soups.insert(Soup {
-                                name: attributes_by_key.remove("Include").unwrap(),
-                                version: attributes_by_key.remove("Version").unwrap(),
-                                meta: json!({})
-                            });
-                        }
+                Ok(Event::Start(ref e)) => if let b"PackageReference" = e.name() {
+                    let mut attributes_by_key = e.attributes()
+                        .filter_map(|attribute| attribute.ok())
+                        .map(|attribute| (
+                            String::from_utf8(attribute.key.to_vec()).unwrap(),
+                            String::from_utf8(attribute.value.to_vec()).unwrap()
+                        ))
+                        .collect::<HashMap<String, String>>();
+                    if attributes_by_key.contains_key("Include") && attributes_by_key.contains_key("Version") {
+                        soups.insert(Soup {
+                            name: attributes_by_key.remove("Include").unwrap(),
+                            version: attributes_by_key.remove("Version").unwrap(),
+                            meta: json!({})
+                        });
                     }
-                    _ => {}
                 },
                 Ok(Event::Eof) => break,
                 Err(e) => {
