@@ -31,6 +31,7 @@ jobs:
       - run: cargo build --release --target $TARGET
       - run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
       - run: |
-          gh release upload ${{ github.ref }} target/${TARGET}/release/souper-${TARGET}.tar.gz
+          TAG=$(echo ${{ github.ref }} | sed 's#refs/tags/##')
+          gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.tar.gz
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
