@@ -14,7 +14,7 @@ struct Content {
     dependencies: HashMap<String, String>
 }
 
-impl <R> SoupSource<R> for PackageJson where R: io::Read {
+impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
     fn soups(reader: R) -> BTreeSet<Soup> {
         let content: Content = serde_json::from_reader(reader).unwrap();
         let soups = content.dependencies.into_iter()
