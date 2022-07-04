@@ -1,6 +1,6 @@
 use std::{fs, io, path};
 
-const GLOBAL_EXCLUDE_DIRS: [&'static str; 3] = [
+const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "node_modules",
     "bin",
     "obj"
@@ -42,5 +42,5 @@ pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Ve
             }
         }
     }
-    return Ok(files);
+    Ok(files)
 }

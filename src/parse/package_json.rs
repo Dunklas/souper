@@ -17,14 +17,14 @@ struct Content {
 impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
     fn soups(reader: R) -> BTreeSet<Soup> {
         let content: Content = serde_json::from_reader(reader).unwrap();
-        let soups = content.dependencies.into_iter()
+
+        content.dependencies.into_iter()
             .map(|(key, value)| Soup {
                 name: key,
                 version: value,
                 meta: json!({})
             })
-            .collect::<BTreeSet<Soup>>();
-        return soups;
+            .collect::<BTreeSet<Soup>>()
     }
 }
 
