@@ -33,19 +33,19 @@ jobs:
         run: rustup target add $TARGET
       - name: build
         run: cargo build --release --target $TARGET
-      - name: package
-        if: ${{ matrix.os }} != windows-latest
+      - name: package (non-windows)
+        if: matrix.os != 'windows-latest'
         run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
-      - name: package
-        if: ${{ matrix.os }} == windows-latest
+      - name: package (windows)
+        if: matrix.os == 'windows-latest'
         run: compress-archive -path "target/$TARGET/release/souper.exe" "target/$TARGET/release/souper-$TARGET.zip" -compressionlevel optimal
       - name: upload
-        if: ${{ matrix.os }} != windows-latest
+        if: matrix.os != 'windows-latest'
         run: |
           TAG=$(echo ${{ github.ref }} | sed 's#refs/tags/##')
           gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.tar.gz
       - name: upload
-        if: ${{ matrix.os }} == windows-latest
+        if: matrix.os == 'windows-latest'
         run: |
           $TAG=${{ github.ref }} -replace "refs/tags/", ""
           gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.zip
