@@ -1,8 +1,11 @@
 name: release
 
 on:
-  tags:
-    - 'v*'
+  push:
+    tags:
+      - v*
+    branches:
+      - main
 
 jobs:
   create-release:
