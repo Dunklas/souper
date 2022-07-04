@@ -53,11 +53,11 @@ impl SoupContexts {
                 Ok(path_string) => path_string,
                 Err(_) => {
                     return Err(SouperIoError{
-                        message: format!("Not able to convert relative path to string")
+                        message: "Not able to convert relative path to string".to_string()
                     })
                 }
             };
-            let relative_path = relative_path.replace("\\", "/");
+            let relative_path = relative_path.replace('\\', "/");
             soup_contexts.insert(relative_path, soups);
         }
         Ok(SoupContexts {
