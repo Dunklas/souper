@@ -13,7 +13,6 @@ jobs:
         run: cargo build --verbose
       - name: test
         run: cargo test --verbose
-
   release-build:
     strategy:
       matrix:
@@ -24,10 +23,12 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-latest
             target: x86_64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
+    env:
+      TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v2
-      - run: rustup target add ${{ matrix.target }}
-      - run: cargo build --release --target ${{ matrix.target }}
+      - run: rustup target add $TARGET
+      - run: cargo build --release --target $TARGET
+      - run: |
+          (cd target/$TARGET/release && tar -czvf souper-$TARGET.tar.gz souper)
