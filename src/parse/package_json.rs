@@ -65,4 +65,13 @@ mod tests {
         ].into_iter().collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
     }
+
+    #[test]
+    fn no_dependencies() {
+        let content = r#"{
+            "dependencies": {}
+        }"#.as_bytes();
+        let soups = PackageJson::soups(content);
+        assert_eq!(0, soups.len());
+    }
 }
