@@ -27,3 +27,5 @@ jobs:
           ls target/x86_64-pc-windows-msvc/release
           compress-archive -path "target/x86_64-pc-windows-msvc/release/souper.exe" "target/x86_64-pc-windows-msvc/release/souper-x86_64-pc-windows-msvc.zip" -compressionlevel optimal
           ls target/x86_64-pc-windows-msvc/release
+          $tag="refs/tags/v0.0.1" -replace "refs/tags/", ""
+          echo $tag
