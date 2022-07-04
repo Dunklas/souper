@@ -20,7 +20,7 @@ pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Ve
                 }
             }
             for ex in exclude_dirs {
-                if file_name.eq(ex) {
+                if path.eq(ex) {
                     continue 'entries;
                 }
             }
