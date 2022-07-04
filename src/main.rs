@@ -71,7 +71,10 @@ fn main() {
     };
 
     let combined_contexts = SoupContexts::combine(current_contexts, scanned_contexts);
-    if let Err(e) = combined_contexts.write_to_file(&output_path) {
-        panic!("{}", e);
+    match combined_contexts.write_to_file(&output_path) {
+        Err(e) => {
+            panic!("{}", e);
+        },
+        _ => {}
     }
 }

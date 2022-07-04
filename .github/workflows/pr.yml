@@ -11,5 +11,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: build
         run: cargo build --verbose
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install clippy
+        run: rustup component add clippy
+      - name: lint
+        run: cargo clippy -- -D warnings
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
       - name: test
         run: cargo test --verbose
