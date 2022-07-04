@@ -14,7 +14,7 @@ struct Content {
     dependencies: HashMap<String, String>
 }
 
-impl <R> SoupSource<R> for PackageJson where R: io::Read {
+impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
     fn soups(reader: R) -> BTreeSet<Soup> {
         let content: Content = serde_json::from_reader(reader).unwrap();
         let soups = content.dependencies.into_iter()
@@ -34,11 +34,11 @@ mod tests {
 
     #[test]
     fn single_dependency() {
-        let content = "{
-            \"dependencies\": {
-                \"some-lib\": \"^1.0.0\"
+        let content = r#"{
+            "dependencies": {
+                "some-lib": "^1.0.0"
             }
-        }".as_bytes();
+        }"#.as_bytes();
         let soups = PackageJson::soups(content);
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
@@ -51,12 +51,12 @@ mod tests {
 
     #[test]
     fn multiple_dependencies() {
-        let content = "{
-            \"dependencies\": {
-                \"some-lib\": \"^1.0.0\",
-                \"another-lib\": \"6.6.6\"
+        let content = r#"{
+            "dependencies": {
+                "some-lib": "^1.0.0",
+                "another-lib": "6.6.6"
             }
-        }".as_bytes();
+        }"#.as_bytes();
         let soups = PackageJson::soups(content);
         assert_eq!(2, soups.len());
         let expected_soups = vec![
@@ -64,5 +64,14 @@ mod tests {
             Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!({}) }
         ].into_iter().collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
+    }
+
+    #[test]
+    fn no_dependencies() {
+        let content = r#"{
+            "dependencies": {}
+        }"#.as_bytes();
+        let soups = PackageJson::soups(content);
+        assert_eq!(0, soups.len());
     }
 }

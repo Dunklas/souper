@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
 use crate::parse::{
     SoupSource,
-    package_json::PackageJson
+    package_json::PackageJson,
+    csproj::CsProj
 };
 use crate::utils;
 
@@ -25,22 +26,16 @@ impl SoupContexts {
             };
             let reader = BufReader::new(file);
             let filename = match path.file_name() {
+                Some(filename) => filename,
                 None => {
                     return Err(SouperIoError{
                         message: format!("Not able to obtain filename for path: {}", path.display())
                     });
                 }
-                Some(filename) => match filename.to_str() {
-                    Some(filename) => filename,
-                    None => {
-                        return Err(SouperIoError{
-                            message: format!("Not able to convert filename to string")
-                        })
-                    }
-                }
             };
-            let soups = match filename {
-                    "package.json" => PackageJson::soups(reader),
+            let soups = match filename.to_str() {
+                    Some("package.json") => PackageJson::soups(reader),
+                    Some(x) if x.contains(".csproj") => CsProj::soups(reader),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }

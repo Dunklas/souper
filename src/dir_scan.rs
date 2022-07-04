@@ -24,8 +24,16 @@ pub fn scan(dir: &path::PathBuf) -> Result<Vec<path::PathBuf>, io::Error> {
             continue;
         }
         if file_type.is_file() {
-            if file_name.eq("package.json") {
-                files.push(path);
+            match file_name.to_str() {
+                Some("package.json") => {
+                    files.push(path);
+                },
+                Some(file_name_str) => {
+                    if file_name_str.contains(".csproj") {
+                        files.push(path);
+                    }
+                },
+                _ => {}
             }
         }
     }
