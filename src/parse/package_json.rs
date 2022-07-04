@@ -34,11 +34,11 @@ mod tests {
 
     #[test]
     fn single_dependency() {
-        let content = "{
-            \"dependencies\": {
-                \"some-lib\": \"^1.0.0\"
+        let content = r#"{
+            "dependencies": {
+                "some-lib": "^1.0.0"
             }
-        }".as_bytes();
+        }"#.as_bytes();
         let soups = PackageJson::soups(content);
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
@@ -51,12 +51,12 @@ mod tests {
 
     #[test]
     fn multiple_dependencies() {
-        let content = "{
-            \"dependencies\": {
-                \"some-lib\": \"^1.0.0\",
-                \"another-lib\": \"6.6.6\"
+        let content = r#"{
+            "dependencies": {
+                "some-lib": "^1.0.0",
+                "another-lib": "6.6.6"
             }
-        }".as_bytes();
+        }"#.as_bytes();
         let soups = PackageJson::soups(content);
         assert_eq!(2, soups.len());
         let expected_soups = vec![
