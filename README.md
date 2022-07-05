@@ -1,12 +1,40 @@
 # souper
 
-Scans a given folder for software of unknown provinence (SOUP) and dumps them in a json-file.
+Souper scans a given directory for [software of unknown provinence (SOUP)](https://en.wikipedia.org/wiki/Software_of_unknown_pedigree) and writes them to a json-file.
+The json-file contains name, version and a meta property for each SOUP.
+The meta property may be populated with arbitrary metadata.
+If you run souper after the version of a SOUP has been updated, the json-file will be updated with the new version, while preserving the arbitrary metadata.
+If a SOUP has been added or removed, the json-file will be updated accordingly.
+
+*Why*? 
+In order to be compliant with standards such as [IEC 62304](https://en.wikipedia.org/wiki/IEC_62304), you might need to maintain documentation related to software of unknown provinence (SOUP).
+
+Below is an example of how the output looks like, with some arbitrary metadata.
+
+
+```json
+{
+    "src/package.json": [
+        {
+            "name": "react",
+            "version": "18.2.0",
+            "meta": {
+                "purpose": "Enable us to efficiently build single page applications"
+            }
+        }
+    ]
+}
+```
+
+At the time of writing, souper will attempt to identify SOUPs from the following sources:
+ - package.json (npm)
+ - *.csproj (ASP.NET)
 
 ## Installation
 
 1. Grab binary for your OS from the latest release
 2. Extract the downloaded file: `tar xvf <-FILENAME->`
-3. Make sure the extracted executable (`souper`) is present in your `PATH`
+3. Make sure the extracted executable is present in your `PATH`
 
 ## Usage
 
