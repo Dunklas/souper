@@ -13,6 +13,7 @@ use soup::model::SoupContexts;
 
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
 #[derive(Parser)]
+#[clap(version)]
 struct Cli {
     /// Output file to print report in
     #[clap(short = 'o', long = "output-file", parse(from_os_str))]
