@@ -7,7 +7,8 @@ use crate::soup::model::{Soup, SoupContexts, SouperIoError};
 use crate::parse::{
     SoupSource,
     package_json::PackageJson,
-    csproj::CsProj
+    csproj::CsProj,
+    docker_base::DockerBase
 };
 use crate::utils;
 
@@ -36,6 +37,7 @@ impl SoupContexts {
             let parse_result = match filename.to_str() {
                     Some("package.json") => PackageJson::soups(reader),
                     Some(x) if x.contains(".csproj") => CsProj::soups(reader),
+                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(reader),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }

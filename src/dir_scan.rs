@@ -33,10 +33,11 @@ pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Ve
                 Some("package.json") => {
                     files.push(path);
                 },
-                Some(file_name_str) => {
-                    if file_name_str.contains(".csproj") {
-                        files.push(path);
-                    }
+                Some(file_name_str) if file_name_str.contains(".csproj") => {
+                    files.push(path);
+                },
+                Some(file_name_str) if file_name_str.contains("Dockerfile") => {
+                    files.push(path);
                 },
                 _ => {}
             }
