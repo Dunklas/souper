@@ -1,7 +1,8 @@
 # souper
 
-Souper scans a given directory for software of unknown provinence (SOUP) and writes them to a json-file.
-The json-file contains a meta property for each SOUP which you can populate with arbitrary metadata.
+Souper scans a given directory for [software of unknown provinence (SOUP)](https://en.wikipedia.org/wiki/Software_of_unknown_pedigree) and writes them to a json-file.
+The json-file contains name, version and a meta property for each SOUP.
+The meta property may be populated with arbitrary metadata.
 If you run souper after a SOUP has been added, removed or updated the json-file will be updated accordingly, without overwriting your arbitrary metadata.
 
 *Why*? 
