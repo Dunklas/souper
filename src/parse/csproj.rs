@@ -1,12 +1,12 @@
-use super::SoupSource;
-use crate::soup::model::{Soup, SoupSourceParseError};
-use quick_xml::events::Event;
-use quick_xml::Reader;
-use serde_json::json;
 use std::{
     collections::{BTreeSet, HashMap},
     io
 };
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use serde_json::json;
+use super::SoupSource;
+use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct CsProj {}
 

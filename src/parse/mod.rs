@@ -8,3 +8,4 @@ pub trait SoupSource<R: io::BufRead> {
 
 pub mod package_json;
 pub mod csproj;
+pub mod docker_base;
