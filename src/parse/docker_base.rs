@@ -11,7 +11,7 @@ use crate::soup::model::{Soup, SoupSourceParseError};
 pub struct DockerBase {}
 
 lazy_static! {
-    static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[a-zA-Z0-9_/]+ +)?(?P<name>[a-zA-Z0-9\-/\.]+):(?P<version>[a-zA-Z0-9\._-]+) *(?:AS +[a-zA-Z0-9\-]+)? *$").unwrap();
+    static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[\w/]+ +)?(?P<name>[\w\-\./]+):(?P<version>[\w\.-]+) *(?:AS +[\w\-]+)? *$").unwrap();
 }
 
 impl<R> SoupSource<R> for DockerBase
