@@ -22,8 +22,6 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-latest
             target: x86_64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     env:
       TARGET: ${{ matrix.target }}
@@ -33,21 +31,31 @@ jobs:
         run: rustup target add $TARGET
       - name: build
         run: cargo build --release --target $TARGET
-      - name: package (non-windows)
-        if: matrix.os != 'windows-latest'
+      - name: package
         run: (cd target/${TARGET}/release && tar -czvf souper-${TARGET}.tar.gz souper)
-      - name: package (windows)
-        if: matrix.os == 'windows-latest'
-        run: compress-archive -path "target/$TARGET/release/souper.exe" "target/$TARGET/release/souper-$TARGET.zip" -compressionlevel optimal
       - name: upload
-        if: matrix.os != 'windows-latest'
         run: |
           TAG=$(echo ${{ github.ref }} | sed 's#refs/tags/##')
           gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+  release-build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    env:
+      TARGET: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v2
+      - name: add target
+        run: rustup target add $env:TARGET
+      - name: build
+        run: cargo build --release --target $env:TARGET
+      - name: package
+        run: compress-archive -path "target/$env:TARGET/release/souper.exe" "target/$env:TARGET/release/souper-$env:TARGET.zip" -compressionlevel optimal
       - name: upload
-        if: matrix.os == 'windows-latest'
         run: |
           $TAG=${{ github.ref }} -replace "refs/tags/", ""
-          gh release upload $TAG target/${TARGET}/release/souper-${TARGET}.zip
+          gh release upload $env:TAG "target/${env:TARGET}/release/souper-${env:TARGET}.zip"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
