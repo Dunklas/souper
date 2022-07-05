@@ -33,12 +33,20 @@ impl SoupContexts {
                     });
                 }
             };
-            let soups = match filename.to_str() {
+            let parse_result = match filename.to_str() {
                     Some("package.json") => PackageJson::soups(reader),
                     Some(x) if x.contains(".csproj") => CsProj::soups(reader),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }
+            };
+            let soups = match parse_result {
+                Ok(soups) => soups,
+                Err(e) => {
+                    return Err(SouperIoError{
+                        message: format!("Unable to parse {} due to: {}", path.display(), e)
+                    });
+                }
             };
             let relative_path = match utils::relative_path(path.as_ref(), source_dir.as_ref()) {
                 Ok(relative_path) => relative_path,

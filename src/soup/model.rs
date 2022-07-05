@@ -66,6 +66,22 @@ impl fmt::Debug for SouperIoError {
     }
 }
 
+pub struct SoupSourceParseError {
+    pub message: String
+}
+
+impl fmt::Display for SoupSourceParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl fmt::Debug for SoupSourceParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ file: {}, line: {} }}", file!(), line!())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
