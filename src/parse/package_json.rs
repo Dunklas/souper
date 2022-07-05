@@ -4,7 +4,7 @@ use std::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use crate::soup::model::Soup;
+use crate::soup::model::{Soup, SoupSourceParseError};
 use super::SoupSource;
 
 pub struct PackageJson {}
@@ -15,16 +15,23 @@ struct Content {
 }
 
 impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
-    fn soups(reader: R) -> BTreeSet<Soup> {
-        let content: Content = serde_json::from_reader(reader).unwrap();
+    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+        let content: Content = match serde_json::from_reader(reader) {
+            Ok(content) => content,
+            Err(e) => {
+                return Err(SoupSourceParseError{
+                    message: format!("Invalid package.json structure ({})", e)
+                })
+            }
+        };
 
-        content.dependencies.into_iter()
+        Ok(content.dependencies.into_iter()
             .map(|(key, value)| Soup {
                 name: key,
                 version: value,
                 meta: json!({})
             })
-            .collect::<BTreeSet<Soup>>()
+            .collect::<BTreeSet<Soup>>())
     }
 }
 
@@ -39,7 +46,9 @@ mod tests {
                 "some-lib": "^1.0.0"
             }
         }"#.as_bytes();
-        let soups = PackageJson::soups(content);
+        let result = PackageJson::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
             name: "some-lib".to_owned(),
@@ -57,7 +66,9 @@ mod tests {
                 "another-lib": "6.6.6"
             }
         }"#.as_bytes();
-        let soups = PackageJson::soups(content);
+        let result = PackageJson::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(2, soups.len());
         let expected_soups = vec![
             Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!({}) },
@@ -71,7 +82,9 @@ mod tests {
         let content = r#"{
             "dependencies": {}
         }"#.as_bytes();
-        let soups = PackageJson::soups(content);
+        let result = PackageJson::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(0, soups.len());
     }
 }

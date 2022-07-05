@@ -1,5 +1,5 @@
 use super::SoupSource;
-use crate::soup::model::Soup;
+use crate::soup::model::{Soup, SoupSourceParseError};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde_json::json;
@@ -14,7 +14,7 @@ impl<R> SoupSource<R> for CsProj
 where
     R: io::BufRead,
 {
-    fn soups(reader: R) -> BTreeSet<Soup> {
+    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut reader = Reader::from_reader(reader);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
@@ -24,30 +24,47 @@ where
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => if let b"PackageReference" = e.name() {
-                    let mut attributes_by_key = e.attributes()
+                    let attributes_by_key = e.attributes()
                         .filter_map(|attribute| attribute.ok())
-                        .map(|attribute| (
-                            String::from_utf8(attribute.key.to_vec()).unwrap(),
-                            String::from_utf8(attribute.value.to_vec()).unwrap()
-                        ))
-                        .collect::<HashMap<String, String>>();
-                    if attributes_by_key.contains_key("Include") && attributes_by_key.contains_key("Version") {
+                        .map(|attribute| (attribute.key.to_vec(), attribute.value.to_vec()))
+                        .collect::<HashMap<Vec<u8>, Vec<u8>>>();
+                    let name = attribute_value(&attributes_by_key, "Include")?;
+                    let version = attribute_value(&attributes_by_key, "Version")?;
                         soups.insert(Soup {
-                            name: attributes_by_key.remove("Include").unwrap(),
-                            version: attributes_by_key.remove("Version").unwrap(),
+                            name,
+                            version,
                             meta: json!({})
                         });
-                    }
                 },
                 Ok(Event::Eof) => break,
                 Err(e) => {
-                    panic!("Error: {}", e);
+                    return Err(SoupSourceParseError{
+                        message: format!("Invalid XML structure {}", e)
+                    });
                 }
                 _ => {}
             }
         }
         buf.clear();
-        soups
+        Ok(soups)
+    }
+}
+
+fn attribute_value(attributes: &HashMap<Vec<u8>, Vec<u8>>, key: &str) -> Result<String, SoupSourceParseError> {
+    match attributes.get(key.as_bytes()) {
+        Some(value) => match String::from_utf8(value.clone()) {
+            Ok(value) => Ok(value),
+            Err(_e) => {
+                return Err(SoupSourceParseError{
+                    message: format!("Unable to parse attribute {} as utf8", key)
+                });
+            }
+        },
+        None => {
+            return Err(SoupSourceParseError{
+                message: format!("Missing required attribute: {}", key)
+            })
+        }
     }
 }
 
@@ -67,7 +84,9 @@ mod tests {
         "#
         .as_bytes();
 
-        let soups = CsProj::soups(content);
+        let result = CsProj::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
             name: "Azure.Messaging.ServiceBus".to_owned(),
@@ -89,7 +108,9 @@ mod tests {
         "#
         .as_bytes();
 
-        let soups = CsProj::soups(content);
+        let result = CsProj::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(2, soups.len());
         let expected_soups = vec![
             Soup { name: "Azure.Messaging.ServiceBus".to_owned(), version: "7.2.1".to_owned(), meta: json!({}) },
@@ -107,7 +128,9 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let soups = CsProj::soups(content);
+        let result = CsProj::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
         assert_eq!(0, soups.len());
     }
 }

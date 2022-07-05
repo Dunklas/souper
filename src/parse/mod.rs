@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 use std::io;
-use crate::soup::model::Soup;
+use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub trait SoupSource<R: io::BufRead> {
-    fn soups(reader: R) -> BTreeSet<Soup>;
+    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError>;
 }
 
 pub mod package_json;
