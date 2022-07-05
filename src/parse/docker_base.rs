@@ -11,7 +11,7 @@ use crate::soup::model::{Soup, SoupSourceParseError};
 pub struct DockerBase {}
 
 lazy_static! {
-    static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?P<name>[a-zA-Z0-9\-/\.]+):(?P<version>[a-zA-Z0-9\._-]+) *(?:AS +[a-zA-Z0-9\-]+)? *$").unwrap();
+    static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[a-zA-Z0-9_/]+ +)?(?P<name>[a-zA-Z0-9\-/\.]+):(?P<version>[a-zA-Z0-9\._-]+) *(?:AS +[a-zA-Z0-9\-]+)? *$").unwrap();
 }
 
 impl<R> SoupSource<R> for DockerBase
@@ -61,7 +61,6 @@ FROM postgres:14.4
             version: "14.4".to_owned(),
             meta: json!({})
         };
-        assert_eq!(1, soups.len());
         assert_eq!(true, soups.contains(&expected_soup));
     }
 
@@ -74,8 +73,24 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         let result = DockerBase::soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
-        assert_eq!(1, soups.len());
         let expected_soup = Soup {
+            name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
+            version: "6.0".to_owned(),
+            meta: json!({})
+        };
+        assert_eq!(true, soups.contains(&expected_soup));
+    }
+
+    #[test]
+    fn with_platform() {
+        let content = r#"
+FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+        "#.as_bytes();
+
+        let result = DockerBase::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        let expected_soup = Soup{
             name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
             version: "6.0".to_owned(),
             meta: json!({})
