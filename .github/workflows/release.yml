@@ -55,7 +55,8 @@ jobs:
         run: compress-archive -path "target/$env:TARGET/release/souper.exe" "target/$env:TARGET/release/souper-$env:TARGET.zip" -compressionlevel optimal
       - name: upload
         run: |
-          $TAG=${{ github.ref }} -replace "refs/tags/", ""
+          $TAG="$env:GH_REF" -replace "refs/tags/", ""
           gh release upload $env:TAG "target/${env:TARGET}/release/souper-${env:TARGET}.zip"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REF: ${{ github.ref }}
