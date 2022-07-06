@@ -23,6 +23,10 @@ impl <R: io::BufRead> SoupSource<R> {
         }
     }
 
+    pub fn append_parsers(&self, parsers: Vec<Box<dyn SoupParse<R>>>) {
+        self.parsers.append(&parsers);
+    }
+
     pub fn soups(&self) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut result = BTreeSet::<Soup>::new();
         // If I can't read a BufRead more than once - Load it as string into memory and then run parsers?
