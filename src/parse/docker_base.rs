@@ -21,8 +21,7 @@ where
     fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         Ok(reader.lines()
             .filter_map(|line| line.ok())
-            .filter(|line| BASE_PATTERN.is_match(&line))
-            .map(|line| {
+            .filter_map(|line| {
                 match BASE_PATTERN.captures(&line) {
                     Some(captures) => {
                         let name = captures.name("name").unwrap().as_str();
@@ -36,8 +35,6 @@ where
                     None => None
                 }
             })
-            .filter(|soup| soup.is_some())
-            .map(|soup| soup.unwrap())
             .collect::<BTreeSet<Soup>>())
     }
 }
@@ -96,5 +93,16 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
             meta: json!({})
         };
         assert_eq!(true, soups.contains(&expected_soup));
+    }
+
+    #[test]
+    fn no_from_statement() {
+        let content = r#"
+COPY --chown app:app . ./
+        "#.as_bytes();
+        let result = DockerBase::soups(content);
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(0, soups.len());
     }
 }
