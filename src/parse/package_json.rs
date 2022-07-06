@@ -5,7 +5,7 @@ use std::{
 use serde::Deserialize;
 use serde_json::json;
 use crate::soup::model::{Soup, SoupSourceParseError};
-use super::SoupSource;
+use super::SoupParse;
 
 pub struct PackageJson {}
 
@@ -14,8 +14,8 @@ struct Content {
     dependencies: HashMap<String, String>
 }
 
-impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
-    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+impl <R> SoupParse<R> for PackageJson where R: io::BufRead {
+    fn soups(&self, reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let content: Content = match serde_json::from_reader(reader) {
             Ok(content) => content,
             Err(e) => {
@@ -46,7 +46,7 @@ mod tests {
                 "some-lib": "^1.0.0"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
@@ -66,7 +66,7 @@ mod tests {
                 "another-lib": "6.6.6"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
@@ -82,7 +82,7 @@ mod tests {
         let content = r#"{
             "dependencies": {}
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

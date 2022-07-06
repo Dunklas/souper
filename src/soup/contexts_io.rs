@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
 use crate::parse::{
-    SoupSource,
+    SoupParse,
     package_json::PackageJson,
     csproj::CsProj,
     docker_base::DockerBase

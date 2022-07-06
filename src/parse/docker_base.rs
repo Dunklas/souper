@@ -5,7 +5,7 @@ use std::{
 use serde_json::json;
 use regex::Regex;
 use lazy_static::lazy_static;
-use super::SoupSource;
+use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct DockerBase {}
@@ -14,11 +14,11 @@ lazy_static! {
     static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[\w/]+ +)?(?P<name>[\w\-\./]+):(?P<version>[\w\.-]+) *(?:AS +[\w\-]+)? *$").unwrap();
 }
 
-impl<R> SoupSource<R> for DockerBase
+impl<R> SoupParse<R> for DockerBase
 where
     R: io::BufRead,
 {
-    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(&self, reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         Ok(reader.lines()
             .filter_map(|line| line.ok())
             .filter_map(|line| {
@@ -50,7 +50,7 @@ mod tests {
 FROM postgres:14.4
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -67,7 +67,7 @@ FROM postgres:14.4
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -84,7 +84,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup{
@@ -100,7 +100,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         let content = r#"
 COPY --chown app:app . ./
         "#.as_bytes();
-        let result = DockerBase::soups(content);
+        let result = DockerBase{}.soups(content);
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
