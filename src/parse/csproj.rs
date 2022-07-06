@@ -1,12 +1,12 @@
-use super::SoupSource;
-use crate::soup::model::{Soup, SoupSourceParseError};
-use quick_xml::events::Event;
-use quick_xml::Reader;
-use serde_json::json;
 use std::{
     collections::{BTreeSet, HashMap},
     io
 };
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use serde_json::json;
+use super::SoupSource;
+use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct CsProj {}
 
@@ -75,14 +75,13 @@ mod tests {
 
     #[test]
     fn single_dependency() {
-        let content: &[u8] = r#"
+        let content = r#"
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <ItemGroup>
         <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.2.1" />
     </ItemGroup>
 </Project>
-        "#
-        .as_bytes();
+        "#.as_bytes();
 
         let result = CsProj::soups(content);
         assert_eq!(true, result.is_ok());
@@ -98,15 +97,14 @@ mod tests {
 
     #[test]
     fn multiple_dependencies() {
-        let content: &[u8] = r#"
+        let content = r#"
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <ItemGroup>
         <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.2.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
     </ItemGroup>
 </Project>
-        "#
-        .as_bytes();
+        "#.as_bytes();
 
         let result = CsProj::soups(content);
         assert_eq!(true, result.is_ok());

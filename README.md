@@ -27,9 +27,10 @@ Below is an example of how the output looks like, with some arbitrary metadata.
 }
 ```
 
-At the time of writing, souper will attempt to identify SOUPs from the following sources:
+Souper will attempt to identify SOUPs from the following sources:
  - package.json (npm)
  - *.csproj (ASP.NET)
+ - docker base images
 
 ## Installation
 
