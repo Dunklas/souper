@@ -135,4 +135,6 @@ mod tests {
         assert_eq!("1.2.0", soup.version);
         assert_eq!(json!("{\"some-meta\": \"some-value\"}"), soup.meta);
     }
+
+    // TODO: Add tests for default_meta
 }
