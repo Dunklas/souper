@@ -42,6 +42,12 @@ impl SoupContexts {
     }
 }
 
+
+// TODO: Update meta to be a JSON object (not arbitrary value)
+fn combine_meta(m1: &Value, m2: &Value) -> Value {
+    serde_json::to_value("").unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,7 +127,7 @@ mod tests {
     #[test]
     fn update_soup_version_preserves_meta() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!("{\"some-meta\": \"some-value\"}")}
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"some-meta": "some-value"}) }
         ]);
         let second = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: json!({}) }
@@ -134,6 +140,23 @@ mod tests {
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.2.0", soup.version);
         assert_eq!(json!("{\"some-meta\": \"some-value\"}"), soup.meta);
+    }
+
+    #[test]
+    fn update_with_new_meta_keys() {
+        let first = create_contexts("src/package.json", vec![
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"some-meta": "some-value"}) }
+        ]);
+        let second = create_contexts("src/package.json", vec![
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": ""}) }
+        ]);
+        let result = SoupContexts::combine(first, second);
+        assert_eq!(1, result.contexts.len());
+        let soups = result.contexts.get("src/package.json").unwrap();
+        let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
+        assert_eq!("some-dep", soup.name);
+        assert_eq!("1.0.0", soup.version);
+        assert_eq!(json!({"some-meta": "some-value", "requirements": ""}), soup.meta);
     }
 
     // TODO: Add tests for default_meta
