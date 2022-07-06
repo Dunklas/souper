@@ -38,7 +38,6 @@ impl SoupContexts {
 }
 
 
-// TODO: Update meta to be a JSON object (not arbitrary value)
 fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
     let mut result = base.clone();
     for (key, value) in patch {
