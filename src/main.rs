@@ -64,7 +64,6 @@ fn main() {
             panic!("Failed to parse --meta-key");
         }
     };
-    println!("{:?}", default_meta);
 
     let current_contexts = match output_path.is_file() {
         true => match SoupContexts::from_output_file(&output_path) {
@@ -81,7 +80,7 @@ fn main() {
             panic!("{}", e);
         }
     };
-    let scanned_contexts = match SoupContexts::from_paths(result, path) {
+    let scanned_contexts = match SoupContexts::from_paths(result, path, default_meta) {
         Ok(contexts) => contexts,
         Err(e) => {
             panic!("{}", e);

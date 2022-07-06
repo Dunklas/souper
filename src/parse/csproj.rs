@@ -4,7 +4,6 @@ use std::{
 };
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use serde_json::json;
 use super::SoupSource;
 use crate::soup::model::{Soup, SoupSourceParseError};
 
@@ -14,7 +13,7 @@ impl<R> SoupSource<R> for CsProj
 where
     R: io::BufRead,
 {
-    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut reader = Reader::from_reader(reader);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
@@ -33,7 +32,7 @@ where
                         soups.insert(Soup {
                             name,
                             version,
-                            meta: json!({})
+                            meta: default_meta.clone()
                         });
                 },
                 Ok(Event::Eof) => break,
@@ -83,7 +82,7 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content);
+        let result = CsProj::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
@@ -106,7 +105,7 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content);
+        let result = CsProj::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
@@ -126,7 +125,7 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content);
+        let result = CsProj::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

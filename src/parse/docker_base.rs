@@ -2,7 +2,6 @@ use std::{
     collections::BTreeSet,
     io
 };
-use serde_json::json;
 use regex::Regex;
 use lazy_static::lazy_static;
 use super::SoupSource;
@@ -18,7 +17,7 @@ impl<R> SoupSource<R> for DockerBase
 where
     R: io::BufRead,
 {
-    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         Ok(reader.lines()
             .filter_map(|line| line.ok())
             .filter_map(|line| {
@@ -29,7 +28,7 @@ where
                         Some(Soup{
                             name: name.to_owned(),
                             version: version.to_owned(),
-                            meta: json!({})
+                            meta: default_meta.clone()
                         })
                     },
                     None => None
@@ -50,7 +49,7 @@ mod tests {
 FROM postgres:14.4
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -67,7 +66,7 @@ FROM postgres:14.4
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -84,7 +83,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content);
+        let result = DockerBase::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup{
@@ -100,7 +99,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         let content = r#"
 COPY --chown app:app . ./
         "#.as_bytes();
-        let result = DockerBase::soups(content);
+        let result = DockerBase::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
+use serde_json;
 
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
 use crate::parse::{
@@ -16,6 +17,7 @@ impl SoupContexts {
     pub fn from_paths<P: AsRef<Path>>(
         paths: Vec<PathBuf>,
         source_dir: P,
+        default_meta: serde_json::Value
     ) -> Result<SoupContexts, SouperIoError> {
         let mut soup_contexts: BTreeMap<String, BTreeSet<Soup>> = BTreeMap::new();
         for path in paths {
@@ -35,9 +37,9 @@ impl SoupContexts {
                 }
             };
             let parse_result = match filename.to_str() {
-                    Some("package.json") => PackageJson::soups(reader),
-                    Some(x) if x.contains(".csproj") => CsProj::soups(reader),
-                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(reader),
+                    Some("package.json") => PackageJson::soups(reader, &default_meta),
+                    Some(x) if x.contains(".csproj") => CsProj::soups(reader, &default_meta),
+                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(reader, &default_meta),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }

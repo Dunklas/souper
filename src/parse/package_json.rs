@@ -3,7 +3,6 @@ use std::{
     io,
 };
 use serde::Deserialize;
-use serde_json::json;
 use crate::soup::model::{Soup, SoupSourceParseError};
 use super::SoupSource;
 
@@ -15,7 +14,7 @@ struct Content {
 }
 
 impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
-    fn soups(reader: R) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let content: Content = match serde_json::from_reader(reader) {
             Ok(content) => content,
             Err(e) => {
@@ -29,7 +28,7 @@ impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
             .map(|(key, value)| Soup {
                 name: key,
                 version: value,
-                meta: json!({})
+                meta: default_meta.clone()
             })
             .collect::<BTreeSet<Soup>>())
     }
@@ -38,6 +37,7 @@ impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn single_dependency() {
@@ -46,7 +46,7 @@ mod tests {
                 "some-lib": "^1.0.0"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
@@ -66,7 +66,7 @@ mod tests {
                 "another-lib": "6.6.6"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
@@ -82,7 +82,7 @@ mod tests {
         let content = r#"{
             "dependencies": {}
         }"#.as_bytes();
-        let result = PackageJson::soups(content);
+        let result = PackageJson::soups(content, &json!({}));
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
