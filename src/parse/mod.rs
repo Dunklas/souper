@@ -23,19 +23,19 @@ impl <R: io::BufRead> SoupSource<R> {
         }
     }
 
-    pub fn append_parsers(&self, parsers: Vec<Box<dyn SoupParse<R>>>) {
-        self.parsers.append(&parsers);
+    pub fn append_parsers(&self, &mut parsers: Vec<Box<dyn SoupParse<R>>>) {
+        self.parsers.append(parsers);
     }
 
     pub fn soups(&self) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut result = BTreeSet::<Soup>::new();
         // If I can't read a BufRead more than once - Load it as string into memory and then run parsers?
         for parser in self.parsers {
-            let partial_soups = match *parser.soups(self.source) {
+            let partial_soups = match parser.soups(self.source) {
                 Ok(s) => s,
                 Err(e) => return Err(e)
             };
-            result.append(partial_soups);
+            result.append(*partial_soups);
         }
         Ok(result)
     }

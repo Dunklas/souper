@@ -1,5 +1,8 @@
 use std::{fs, io, path};
-use crate::parse::SoupParse;
+use crate::parse::{
+    SoupSource,
+    package_json::PackageJson
+};
 
 const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "node_modules",
@@ -7,8 +10,8 @@ const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "obj"
 ];
 
-pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Vec<(path::PathBuf, dyn SoupParse<fs::File>)>, io::Error> {
-    let mut files: Vec<path::PathBuf> = Vec::new();
+pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Vec<SoupSource<io::BufReader<fs::File>>>, io::Error> {
+    let mut files: Vec<SoupSource<io::BufReader<fs::File>>> = Vec::new();
     'entries: for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
@@ -32,13 +35,25 @@ pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Ve
         if file_type.is_file() {
             match file_name.to_str() {
                 Some("package.json") => {
-                    files.push(path);
+                    let f = fs::File::open(&path).unwrap();
+                    let r = io::BufReader::new(f);
+                    let source = SoupSource::new(r);
+                    source.append_parsers(vec![Box::new(PackageJson{})]);
+                    files.push(source);
                 },
                 Some(file_name_str) if file_name_str.contains(".csproj") => {
-                    files.push(path);
+                    let f = fs::File::open(&path).unwrap();
+                    let r = io::BufReader::new(f);
+                    let source = SoupSource::new(r);
+                    source.append_parsers(vec![Box::new(PackageJson{})]);
+                    files.push(source);
                 },
                 Some(file_name_str) if file_name_str.contains("Dockerfile") => {
-                    files.push(path);
+                    let f = fs::File::open(&path).unwrap();
+                    let r = io::BufReader::new(f);
+                    let source = SoupSource::new(r);
+                    source.append_parsers(vec![Box::new(PackageJson{})]);
+                    files.push(source);
                 },
                 _ => {}
             }
