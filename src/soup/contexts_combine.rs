@@ -4,11 +4,6 @@ use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
     pub fn combine(base: SoupContexts, other: SoupContexts) -> SoupContexts {
-        if base.contexts == other.contexts {
-            return SoupContexts {
-                contexts: base.contexts,
-            };
-        }
         let mut result_contexts = base.contexts.clone();
         other.contexts.iter()
             .filter(|(path, _soups)| !base.contexts.contains_key(*path))
@@ -29,7 +24,7 @@ impl SoupContexts {
                     name: soup.name.clone(),
                     version: soup.version.clone(),
                     meta: match meta_by_name.get(&soup.name) {
-                        Some(meta) => (*meta).clone(),
+                        Some(meta) => combine_meta(*meta, &soup.meta),
                         None => soup.meta.clone(),
                     }
                 })
@@ -44,8 +39,14 @@ impl SoupContexts {
 
 
 // TODO: Update meta to be a JSON object (not arbitrary value)
-fn combine_meta(m1: &Value, m2: &Value) -> Value {
-    serde_json::to_value("").unwrap()
+fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
+    let mut result = base.clone();
+    for (key, value) in patch {
+        if !base.contains_key(key) {
+            result.insert(key.clone(), value.clone());
+        }
+    }
+    result
 }
 
 #[cfg(test)]
