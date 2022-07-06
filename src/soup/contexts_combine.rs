@@ -144,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn update_with_new_meta_keys() {
+    fn update_with_meta_keys() {
         let first = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"some-meta": "some-value"}).as_object().unwrap().clone() }
         ]);
@@ -158,6 +158,24 @@ mod tests {
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.0.0", soup.version);
         assert_eq!(json!({"some-meta": "some-value", "requirements": ""}).as_object().unwrap().clone(), soup.meta);
+    }
+
+    #[test]
+    fn update_with_meta_keys_dont_overwrite() {
+        let first = create_contexts("src/package.json", vec![
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": "a-requirement"}).as_object().unwrap().clone() }
+        ]);
+        let second = create_contexts("src/package.json", vec![
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": ""}).as_object().unwrap().clone() }
+        ]);
+
+        let result = SoupContexts::combine(first, second);
+        assert_eq!(1, result.contexts.len());
+        let soups = result.contexts.get("src/package.json").unwrap();
+        let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
+        assert_eq!("some-dep", soup.name);
+        assert_eq!("1.0.0", soup.version);
+        assert_eq!(json!({"requirements": "a-requirement"}).as_object().unwrap().clone(), soup.meta);
     }
 
     // TODO: Add tests for default_meta
