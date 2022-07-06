@@ -53,7 +53,6 @@ fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<St
 mod tests {
     use super::*;
     use std::collections::BTreeMap;
-    use serde_json::json;
 
     fn create_contexts(path: &str, soups: Vec<Soup>) -> SoupContexts {
         SoupContexts{
@@ -62,6 +61,12 @@ mod tests {
                 soups.into_iter().collect()
             )].into_iter().collect()
         }
+    }
+
+    fn meta(key_values: Vec<(&str, &str)>) -> Map<String, Value> {
+        key_values.iter()
+            .map(|(key, value)| (String::from(*key), serde_json::to_value(value).unwrap()))
+            .collect::<Map<String, Value>>()
     }
 
     fn empty_contexts() -> SoupContexts {
@@ -74,7 +79,7 @@ mod tests {
     fn combine_add_context() {
         let first = empty_contexts();
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
         let result = SoupContexts::combine(first, second);
@@ -85,7 +90,7 @@ mod tests {
     #[test]
     fn combine_remove_context() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         let second = empty_contexts();
 
@@ -96,11 +101,11 @@ mod tests {
     #[test]
     fn combine_added_soup() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) },
+            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
         let result = SoupContexts::combine(first, second);
@@ -112,11 +117,11 @@ mod tests {
     #[test]
     fn combine_removed_soup() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) },
+            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
         let result = SoupContexts::combine(first, second);
@@ -128,10 +133,10 @@ mod tests {
     #[test]
     fn update_soup_version_preserves_meta() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"some-meta": "some-value"}).as_object().unwrap().clone() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("some-meta", "some-value")]) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: Map::new() }
+            Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: meta(vec![]) }
         ]);
 
         let result = SoupContexts::combine(first, second);
@@ -140,16 +145,16 @@ mod tests {
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.2.0", soup.version);
-        assert_eq!(*json!({"some-meta": "some-value"}).as_object().unwrap(), soup.meta);
+        assert_eq!(meta(vec![("some-meta", "some-value")]), soup.meta);
     }
 
     #[test]
     fn update_with_meta_keys() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"some-meta": "some-value"}).as_object().unwrap().clone() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("some-meta", "some-value")]) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": ""}).as_object().unwrap().clone() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
         let result = SoupContexts::combine(first, second);
         assert_eq!(1, result.contexts.len());
@@ -157,16 +162,19 @@ mod tests {
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.0.0", soup.version);
-        assert_eq!(json!({"some-meta": "some-value", "requirements": ""}).as_object().unwrap().clone(), soup.meta);
+        assert_eq!(meta(vec![
+            ("some-meta", "some-value"),
+            ("requirements", "")
+        ]), soup.meta);
     }
 
     #[test]
     fn update_with_meta_keys_dont_overwrite() {
         let first = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": "a-requirement"}).as_object().unwrap().clone() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "a-requirement")]) }
         ]);
         let second = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: json!({"requirements": ""}).as_object().unwrap().clone() }
+            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
 
         let result = SoupContexts::combine(first, second);
@@ -175,8 +183,6 @@ mod tests {
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.0.0", soup.version);
-        assert_eq!(json!({"requirements": "a-requirement"}).as_object().unwrap().clone(), soup.meta);
+        assert_eq!(meta(vec![("requirements", "a-requirement")]), soup.meta);
     }
-
-    // TODO: Add tests for default_meta
 }
