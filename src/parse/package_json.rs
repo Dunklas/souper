@@ -2,6 +2,10 @@ use std::{
     collections::{HashMap, BTreeSet},
     io,
 };
+use serde_json::{
+    Map,
+    Value
+};
 use serde::Deserialize;
 use crate::soup::model::{Soup, SoupSourceParseError};
 use super::SoupSource;
@@ -14,7 +18,7 @@ struct Content {
 }
 
 impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
-    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let content: Content = match serde_json::from_reader(reader) {
             Ok(content) => content,
             Err(e) => {
@@ -37,7 +41,6 @@ impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn single_dependency() {
@@ -46,14 +49,14 @@ mod tests {
                 "some-lib": "^1.0.0"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content, &json!({}));
+        let result = PackageJson::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
             name: "some-lib".to_owned(),
             version: "^1.0.0".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -66,13 +69,13 @@ mod tests {
                 "another-lib": "6.6.6"
             }
         }"#.as_bytes();
-        let result = PackageJson::soups(content, &json!({}));
+        let result = PackageJson::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: json!({}) },
-            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: json!({}) }
+            Soup { name: "some-lib".to_owned(), version: "^1.0.0".to_owned(), meta: Map::new() },
+            Soup { name: "another-lib".to_owned(), version: "6.6.6".to_owned(), meta: Map::new() }
         ].into_iter().collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
     }
@@ -82,7 +85,7 @@ mod tests {
         let content = r#"{
             "dependencies": {}
         }"#.as_bytes();
-        let result = PackageJson::soups(content, &json!({}));
+        let result = PackageJson::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

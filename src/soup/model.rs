@@ -9,13 +9,16 @@ use serde::{
     Deserialize,
     Serialize
 };
-use serde_json;
+use serde_json::{
+    Map,
+    Value
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Soup {
     pub name: String,
     pub version: String,
-    pub meta: serde_json::Value
+    pub meta: Map<String, Value>
 }
 
 impl PartialEq for Soup {
@@ -93,12 +96,12 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         let s2 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!("{\"requirement\": \"should do this and that\"}")
+            meta: json!({"requirement": "should do this and that"}).as_object().unwrap().clone()
         };
         assert_eq!(s1, s2);
     }
@@ -108,12 +111,12 @@ mod tests {
         let s1 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         let s2 = Soup{
             name: "some-dependency".to_owned(),
             version: "1.0.1".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         assert_ne!(s1, s2);
     }

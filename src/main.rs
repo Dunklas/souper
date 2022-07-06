@@ -1,9 +1,12 @@
 use std::{
-    collections::HashMap,
     env,
     path
 };
-use serde_json::json;
+use serde_json::{
+    json,
+    Map,
+    Value
+};
 use clap::Parser;
 
 mod soup;
@@ -55,15 +58,9 @@ fn main() {
     }
     let exclude_dirs = args.exclude_dirs;
 
-    let default_meta = serde_json::to_value(args.meta_keys.into_iter()
+    let default_meta = args.meta_keys.into_iter()
         .map(|meta_key| (meta_key, json!("")))
-        .collect::<HashMap<String, serde_json::Value>>());
-    let default_meta = match default_meta {
-        Ok(meta) => meta,
-        Err(_e) => {
-            panic!("Failed to parse --meta-key");
-        }
-    };
+        .collect::<Map<String, Value>>();
 
     let current_contexts = match output_path.is_file() {
         true => match SoupContexts::from_output_file(&output_path) {

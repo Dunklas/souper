@@ -2,6 +2,10 @@ use std::{
     collections::BTreeSet,
     io
 };
+use serde_json::{
+    Map,
+    Value
+};
 use regex::Regex;
 use lazy_static::lazy_static;
 use super::SoupSource;
@@ -17,7 +21,7 @@ impl<R> SoupSource<R> for DockerBase
 where
     R: io::BufRead,
 {
-    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         Ok(reader.lines()
             .filter_map(|line| line.ok())
             .filter_map(|line| {
@@ -41,7 +45,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn simple_base() {
@@ -49,13 +52,13 @@ mod tests {
 FROM postgres:14.4
         "#.as_bytes();
 
-        let result = DockerBase::soups(content, &json!({}));
+        let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
             name: "postgres".to_owned(),
             version: "14.4".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -66,13 +69,13 @@ FROM postgres:14.4
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content, &json!({}));
+        let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
             name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
             version: "6.0".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -83,13 +86,13 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#.as_bytes();
 
-        let result = DockerBase::soups(content, &json!({}));
+        let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup{
             name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
             version: "6.0".to_owned(),
-            meta: json!({})
+            meta: Map::new()
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -99,7 +102,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         let content = r#"
 COPY --chown app:app . ./
         "#.as_bytes();
-        let result = DockerBase::soups(content, &json!({}));
+        let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

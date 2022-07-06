@@ -2,6 +2,10 @@ use std::{
     collections::{BTreeSet, HashMap},
     io
 };
+use serde_json::{
+    Map,
+    Value
+};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use super::SoupSource;
@@ -13,7 +17,7 @@ impl<R> SoupSource<R> for CsProj
 where
     R: io::BufRead,
 {
-    fn soups(reader: R, default_meta: &serde_json::Value) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut reader = Reader::from_reader(reader);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
@@ -70,7 +74,6 @@ fn attribute_value(attributes: &HashMap<Vec<u8>, Vec<u8>>, key: &str) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn single_dependency() {
@@ -82,14 +85,14 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content, &json!({}));
+        let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
             name: "Azure.Messaging.ServiceBus".to_owned(),
             version: "7.2.1".to_owned(),
-            meta: json!({}),
+            meta: Map::new()
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -105,13 +108,13 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content, &json!({}));
+        let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            Soup { name: "Azure.Messaging.ServiceBus".to_owned(), version: "7.2.1".to_owned(), meta: json!({}) },
-            Soup { name: "Swashbuckle.AspNetCore".to_owned(), version: "6.3.1".to_owned(), meta: json!({}) }
+            Soup { name: "Azure.Messaging.ServiceBus".to_owned(), version: "7.2.1".to_owned(), meta: Map::new() },
+            Soup { name: "Swashbuckle.AspNetCore".to_owned(), version: "6.3.1".to_owned(), meta: Map::new() }
         ].into_iter().collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
     }
@@ -125,7 +128,7 @@ mod tests {
 </Project>
         "#.as_bytes();
 
-        let result = CsProj::soups(content, &json!({}));
+        let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
