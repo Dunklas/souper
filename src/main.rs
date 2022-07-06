@@ -1,7 +1,9 @@
 use std::{
+    collections::HashMap,
     env,
     path
 };
+use serde_json::json;
 use clap::Parser;
 
 mod soup;
@@ -25,7 +27,11 @@ struct Cli {
 
     /// Directory to exclude
     #[clap(short = 'e', long = "exclude-directory", parse(from_os_str))]
-    exclude_dirs: Vec<path::PathBuf>
+    exclude_dirs: Vec<path::PathBuf>,
+
+    // Key to add in meta property
+    #[clap(short = 'm', long = "meta-key")]
+    meta_keys: Vec<String>
 }
 
 fn main() {
@@ -48,6 +54,17 @@ fn main() {
         panic!("Invalid output file: {:?}", output_path);
     }
     let exclude_dirs = args.exclude_dirs;
+
+    let default_meta = serde_json::to_value(args.meta_keys.into_iter()
+        .map(|meta_key| (meta_key, json!("")))
+        .collect::<HashMap<String, serde_json::Value>>());
+    let default_meta = match default_meta {
+        Ok(meta) => meta,
+        Err(_e) => {
+            panic!("Failed to parse --meta-key");
+        }
+    };
+    println!("{:?}", default_meta);
 
     let current_contexts = match output_path.is_file() {
         true => match SoupContexts::from_output_file(&output_path) {
