@@ -2,8 +2,8 @@
 
 Scans a given directory for [software of unknown provinence (SOUP)](https://en.wikipedia.org/wiki/Software_of_unknown_pedigree) and writes them to a json-file.
 The json-file contains name, version and a meta property for each SOUP.
-The meta property may be populated with arbitrary metadata.
-If you run souper after the version of a SOUP has been updated, the json-file will be updated with the new version, while preserving the arbitrary metadata.
+The meta property is a json object which may be populated with arbitrary metadata.
+If you run souper after the version of a SOUP has been updated, the json-file will be updated with the new version, while preserving content of the meta property.
 If a SOUP has been added or removed, the json-file will be updated accordingly.
 
 *Why*? 
@@ -47,6 +47,18 @@ Navigate to to the repository where you'd like to run souper.
 Alternatively, you can run souper from any directory:
 
 `souper --directory /path/to/my/repo --output-file soups.json`
+
+### Excluding directories
+
+In case there's a directory that you'd like to skip, use the `--exclude-directory` argument.
+
+`souper --output-file soups.json --exclude-directory ./test/`
+
+### Default meta keys
+
+If you know what properties that you'd like in the meta property, you can have them created automatically by using the `--meta-key` argument.
+
+`souper --output-file soups.json --meta-key requirements --meta-key manufacturer`
 
 ## Create a release
 
