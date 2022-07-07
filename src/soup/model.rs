@@ -51,6 +51,9 @@ impl SoupContexts {
     pub fn empty() -> SoupContexts {
         SoupContexts { contexts: BTreeMap::new() }
     }
+    pub fn contexts(&self) -> &BTreeMap<String, BTreeSet<Soup>> {
+        &self.contexts
+    }
 }
 
 pub struct SouperIoError {

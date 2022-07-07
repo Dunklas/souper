@@ -3,6 +3,14 @@ use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
+    pub fn combine2(&mut self, other: &SoupContexts) {
+        for (path, soups) in other.contexts() {
+            if !self.contexts.contains_key(path) {
+                self.contexts.insert(path.clone(), soups.clone());
+            }
+        }
+        self.contexts.retain(|path,_| other.contexts().contains_key(path));
+    }
     pub fn combine(base: SoupContexts, other: SoupContexts) -> SoupContexts {
         let mut result_contexts = base.contexts.clone();
         other.contexts.iter()
@@ -76,25 +84,25 @@ mod tests {
 
     #[test]
     fn combine_add_context() {
-        let base = empty_contexts();
+        let mut base = empty_contexts();
         let other = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        let result = SoupContexts::combine(base, other);
-        assert_eq!(1, result.contexts.len());
-        assert_eq!(true, result.contexts.contains_key("src/package.json"));
+        base.combine2(&other);
+        assert_eq!(1, base.contexts.len());
+        assert_eq!(true, base.contexts.contains_key("src/package.json"));
     }
 
     #[test]
     fn combine_remove_context() {
-        let base = create_contexts("src/package.json", vec![
+        let mut base = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         let other = empty_contexts();
 
-        let result = SoupContexts::combine(base, other);
-        assert_eq!(true, result.contexts.is_empty());
+        base.combine2(&other);
+        assert_eq!(true, base.contexts.is_empty());
     }
 
     #[test]
