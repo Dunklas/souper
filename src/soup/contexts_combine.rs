@@ -20,6 +20,8 @@ impl SoupContexts {
                 }
             }
 
+            // meta by name from self to preserve?
+
             let mut updated_soups = self_soups.iter()
                 .map(|self_soup| Soup {
                     name: self_soup.name.clone(),
