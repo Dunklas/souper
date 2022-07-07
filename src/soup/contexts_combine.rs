@@ -14,6 +14,11 @@ impl SoupContexts {
         for (path, other_soups) in other.contexts() {
             let self_soups = self.contexts.get_mut(path).unwrap();
             self_soups.retain(|soup| other_soups.contains(soup));
+            for other_soup in other_soups {
+                if !self_soups.contains(other_soup) {
+                    self_soups.insert(other_soup.clone());
+                }
+            }
         }
     }
 
@@ -113,7 +118,7 @@ mod tests {
 
     #[test]
     fn combine_added_soup() {
-        let base = create_contexts("src/package.json", vec![
+        let mut base = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         let other = create_contexts("src/package.json", vec![
@@ -121,9 +126,9 @@ mod tests {
             Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
-        let result = SoupContexts::combine(base, other);
-        assert_eq!(1, result.contexts.len());
-        let soups = result.contexts.get("src/package.json").unwrap();
+        base.combine2(&other);
+        assert_eq!(1, base.contexts.len());
+        let soups = base.contexts.get("src/package.json").unwrap();
         assert_eq!(2, soups.len());
     }
 
