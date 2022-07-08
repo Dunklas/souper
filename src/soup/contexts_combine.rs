@@ -8,6 +8,7 @@ impl SoupContexts {
 
         let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
         while let Some((path, other_soups)) = other_contexts.pop() {
+            #[allow(clippy::map_entry)]
             if !self.contexts.contains_key(&path) {
                 self.contexts.insert(path, other_soups);
                 continue;
