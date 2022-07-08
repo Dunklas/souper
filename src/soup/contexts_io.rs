@@ -108,7 +108,7 @@ impl SoupContexts {
                 message: format!("Not able to create file: {} ({})", file_path.as_ref().display(), e)
             })
         };
-        let json = match serde_json::to_string_pretty(&self.contexts) {
+        let json = match serde_json::to_string_pretty(&self.contexts()) {
             Ok(json) => json,
             Err(e) => return Err(SouperIoError{
                 message: format!("Not able to serialize to json: {}", e)
