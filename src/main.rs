@@ -62,7 +62,7 @@ fn main() {
         .map(|meta_key| (meta_key, json!("")))
         .collect::<Map<String, Value>>();
 
-    let current_contexts = match output_path.is_file() {
+    let mut current_contexts = match output_path.is_file() {
         true => match SoupContexts::from_output_file(&output_path) {
             Ok(contexts) => contexts,
             Err(e) => {
@@ -84,8 +84,8 @@ fn main() {
         }
     };
 
-    let combined_contexts = SoupContexts::combine(current_contexts, scanned_contexts);
-    if let Err(e) = combined_contexts.write_to_file(&output_path) {
+    current_contexts.combine(&scanned_contexts);
+    if let Err(e) = current_contexts.write_to_file(&output_path) {
         panic!("{}", e);
     }
 }
