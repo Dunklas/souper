@@ -1,44 +1,36 @@
+use std::collections::{HashMap,BTreeSet};
 use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
-    pub fn combine2(&mut self, other: SoupContexts) {
+    pub fn combine(&mut self, other: SoupContexts) {
         self.contexts.retain(|path,_| other.contexts().contains_key(path));
 
         let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
-        while let Some((path, soups)) = other_contexts.pop() {
+        while let Some((path, other_soups)) = other_contexts.pop() {
             if !self.contexts.contains_key(&path) {
-                self.contexts.insert(path, soups);
+                self.contexts.insert(path, other_soups);
                 continue;
             }
-        }
-    }
 
-    pub fn combine(&mut self, other: &SoupContexts) {
-        for (path, soups) in other.contexts() {
-            if !self.contexts.contains_key(path) {
-                self.contexts.insert(path.clone(), soups.clone());
-            }
-        }
-        self.contexts.retain(|path,_| other.contexts().contains_key(path));
-        
-        for (path, other_soups) in other.contexts() {
-            let self_soups = self.contexts.get_mut(path).unwrap();
+            let meta_by_name = match self.contexts.get(&path) {
+                Some(self_soups) => self_soups.iter()
+                    .map(|soup| (&soup.name, &soup.meta))
+                    .collect::<HashMap<&String, &Map<String, Value>>>(),
+                None => HashMap::new()
+            };
 
+            let other_soups = other_soups.into_iter().collect::<Vec<_>>();
+            let mut result_soups = BTreeSet::<Soup>::new();
             for other_soup in other_soups {
-                let soup = Soup {
-                    name: other_soup.name.clone(),
-                    version: other_soup.version.clone(),
-                    meta: match self_soups.iter().find(|x| x.name == other_soup.name) {
-                        Some(soup) => combine_meta(&soup.meta, &other_soup.meta),
-                        None => other_soup.meta.clone()
-                    }
+                let meta = match meta_by_name.get(&other_soup.name) {
+                    Some(meta) => combine_meta(meta, &other_soup.meta),
+                    None => other_soup.meta
                 };
-                self_soups.remove(&soup);
-                self_soups.insert(soup);
+                result_soups.insert(Soup { name: other_soup.name, version: other_soup.version, meta });
             }
 
-            self_soups.retain(|soup| other_soups.contains(soup));
+            self.contexts.insert(path, result_soups);
         }
     }
 }
@@ -87,7 +79,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine2(other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         assert_eq!(true, base.contexts.contains_key("src/package.json"));
     }
@@ -99,7 +91,7 @@ mod tests {
         ]);
         let other = empty_contexts();
 
-        base.combine2(other);
+        base.combine(other);
         assert_eq!(true, base.contexts.is_empty());
     }
 
@@ -113,7 +105,7 @@ mod tests {
             Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         assert_eq!(2, soups.len());
@@ -129,7 +121,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         assert_eq!(1, soups.len());
@@ -144,7 +136,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -162,7 +154,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -179,7 +171,7 @@ mod tests {
         let other = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -200,7 +192,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
