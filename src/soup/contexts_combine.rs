@@ -33,14 +33,12 @@ impl SoupContexts {
 
 
 fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
-    println!("base: {:?}, patch: {:?}", base, patch);
     let mut result = base.clone();
     for (key, value) in patch {
         if !base.contains_key(key) {
             result.insert(key.clone(), value.clone());
         }
     }
-    println!("result: {:?}", result);
     result
 }
 
