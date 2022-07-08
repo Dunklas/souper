@@ -2,6 +2,18 @@ use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
+    pub fn combine2(&mut self, other: SoupContexts) {
+        self.contexts.retain(|path,_| other.contexts().contains_key(path));
+
+        let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
+        while let Some((path, soups)) = other_contexts.pop() {
+            if !self.contexts.contains_key(&path) {
+                self.contexts.insert(path, soups);
+                continue;
+            }
+        }
+    }
+
     pub fn combine(&mut self, other: &SoupContexts) {
         for (path, soups) in other.contexts() {
             if !self.contexts.contains_key(path) {
@@ -75,7 +87,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine2(other);
         assert_eq!(1, base.contexts.len());
         assert_eq!(true, base.contexts.contains_key("src/package.json"));
     }
@@ -87,7 +99,7 @@ mod tests {
         ]);
         let other = empty_contexts();
 
-        base.combine(&other);
+        base.combine2(other);
         assert_eq!(true, base.contexts.is_empty());
     }
 
