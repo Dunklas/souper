@@ -21,15 +21,15 @@ impl SoupContexts {
                 None => HashMap::new()
             };
 
-            let other_soups = other_soups.into_iter().collect::<Vec<_>>();
-            let mut result_soups = BTreeSet::<Soup>::new();
-            for other_soup in other_soups {
-                let meta = match meta_by_name.get(&other_soup.name) {
-                    Some(meta) => combine_meta(meta, other_soup.meta),
-                    None => other_soup.meta
-                };
-                result_soups.insert(Soup { name: other_soup.name, version: other_soup.version, meta });
-            }
+            let result_soups = other_soups.into_iter()
+                .map(|other_soup| {
+                    let meta = match meta_by_name.get(&other_soup.name) {
+                        Some(meta) => combine_meta(meta, other_soup.meta),
+                        None => other_soup.meta
+                    };
+                    Soup { name: other_soup.name, version: other_soup.version, meta }
+                })
+                .collect::<BTreeSet<Soup>>();
 
             self.contexts.insert(path, result_soups);
         }
