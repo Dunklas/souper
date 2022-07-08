@@ -15,25 +15,15 @@ impl SoupContexts {
             let self_soups = self.contexts.get_mut(path).unwrap();
 
             for other_soup in other_soups {
-                if !self_soups.contains(other_soup) {
-                    self_soups.insert(other_soup.clone());
-                }
-            }
-
-            // meta by name from self to preserve?
-
-            let mut updated_soups = self_soups.iter()
-                .map(|self_soup| Soup {
-                    name: self_soup.name.clone(),
-                    version: self_soup.version.clone(),
-                    meta: match other_soups.get(self_soup) {
-                        Some(other_soup) => combine_meta(&self_soup.meta, &other_soup.meta),
-                        None => self_soup.meta.clone()
+                self_soups.insert(Soup {
+                    name: other_soup.name.clone(),
+                    version: other_soup.version.clone(),
+                    meta: match self_soups.iter().find(|x| x.name == other_soup.name) {
+                        Some(soup) => combine_meta(&soup.meta, &other_soup.meta),
+                        None => other_soup.meta.clone()
                     }
-                })
-                .collect::<BTreeSet<Soup>>();
-            self_soups.append(&mut updated_soups);
-
+                });
+            }
             self_soups.retain(|soup| other_soups.contains(soup));
         }
     }
@@ -74,6 +64,7 @@ impl SoupContexts {
 
 
 fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
+    println!("base: {:?}, patch: {:?}", base, patch);
     let mut result = base.clone();
     for (key, value) in patch {
         if !base.contains_key(key) {
