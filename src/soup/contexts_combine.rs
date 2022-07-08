@@ -24,7 +24,7 @@ impl SoupContexts {
             let mut result_soups = BTreeSet::<Soup>::new();
             for other_soup in other_soups {
                 let meta = match meta_by_name.get(&other_soup.name) {
-                    Some(meta) => combine_meta(meta, &other_soup.meta),
+                    Some(meta) => combine_meta(meta, other_soup.meta),
                     None => other_soup.meta
                 };
                 result_soups.insert(Soup { name: other_soup.name, version: other_soup.version, meta });
@@ -36,11 +36,11 @@ impl SoupContexts {
 }
 
 
-fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
+fn combine_meta(base: &Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
     let mut result = base.clone();
     for (key, value) in patch {
-        if !base.contains_key(key) {
-            result.insert(key.clone(), value.clone());
+        if !base.contains_key(&key) {
+            result.insert(key, value);
         }
     }
     result
