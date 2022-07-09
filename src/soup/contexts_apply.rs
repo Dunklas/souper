@@ -1,11 +1,12 @@
-use std::collections::{HashMap,BTreeSet};
-use std::collections::btree_map::Entry;
-use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
+use serde_json::{Map, Value};
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeSet, HashMap};
 
 impl SoupContexts {
     pub fn apply(&mut self, other: SoupContexts) {
-        self.contexts.retain(|path,_| other.contexts().contains_key(path));
+        self.contexts
+            .retain(|path, _| other.contexts().contains_key(path));
 
         let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
         while let Some((path, other_soups)) = other_contexts.pop() {
@@ -13,27 +14,31 @@ impl SoupContexts {
                 Entry::Vacant(entry) => {
                     entry.insert(other_soups);
                     continue;
-                },
-                Entry::Occupied(entry) => entry.remove_entry()
+                }
+                Entry::Occupied(entry) => entry.remove_entry(),
             };
-
-            let mut self_meta = self_soups.into_iter()
-                .map(|soup| (soup.name, soup.meta))
-                .collect::<HashMap<String, Map<String, Value>>>();
-
-            let result_soups = other_soups.into_iter()
-                .map(|other_soup| {
-                    let meta = match self_meta.remove(&other_soup.name) {
-                        Some(self_meta) => combine_meta(self_meta, other_soup.meta),
-                        None => other_soup.meta
-                    };
-                    Soup { name: other_soup.name, version: other_soup.version, meta }
-                })
-                .collect::<BTreeSet<Soup>>();
-
-            self.contexts.insert(path, result_soups);
-        };
+            self.contexts.insert(path, combine_soups(self_soups, other_soups));
+        }
     }
+}
+
+fn combine_soups(base: BTreeSet<Soup>, other: BTreeSet<Soup>) -> BTreeSet<Soup> {
+    let mut base_meta = base.into_iter()
+        .map(|soup| (soup.name, soup.meta))
+        .collect::<HashMap<String, Map<String, Value>>>();
+    other.into_iter()
+        .map(|other_soup| {
+            let meta = match base_meta.remove(&other_soup.name) {
+                Some(self_meta) => combine_meta(self_meta, other_soup.meta),
+                None => other_soup.meta,
+            };
+            Soup {
+                name: other_soup.name,
+                version: other_soup.version,
+                meta,
+            }
+        })
+        .collect::<BTreeSet<Soup>>()
 }
 
 fn combine_meta(mut base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
@@ -52,32 +57,37 @@ mod tests {
     use std::collections::BTreeMap;
 
     fn create_contexts(path: &str, soups: Vec<Soup>) -> SoupContexts {
-        SoupContexts{
-            contexts: [(
-                path.to_owned(),
-                soups.into_iter().collect()
-            )].into_iter().collect()
+        SoupContexts {
+            contexts: [(path.to_owned(), soups.into_iter().collect())]
+                .into_iter()
+                .collect(),
         }
     }
 
     fn meta(key_values: Vec<(&str, &str)>) -> Map<String, Value> {
-        key_values.iter()
+        key_values
+            .iter()
             .map(|(key, value)| (String::from(*key), serde_json::to_value(value).unwrap()))
             .collect::<Map<String, Value>>()
     }
 
     fn empty_contexts() -> SoupContexts {
-        SoupContexts{
-            contexts: BTreeMap::new()
+        SoupContexts {
+            contexts: BTreeMap::new(),
         }
     }
 
     #[test]
     fn combine_add_context() {
         let mut base = empty_contexts();
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
 
         base.apply(other);
         assert_eq!(1, base.contexts.len());
@@ -86,9 +96,14 @@ mod tests {
 
     #[test]
     fn combine_remove_context() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
         let other = empty_contexts();
 
         base.apply(other);
@@ -97,14 +112,30 @@ mod tests {
 
     #[test]
     fn combine_added_soup() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
-        
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![
+                Soup {
+                    name: "some-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: meta(vec![]),
+                },
+                Soup {
+                    name: "some-other-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: meta(vec![]),
+                },
+            ],
+        );
+
         base.apply(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
@@ -113,14 +144,30 @@ mod tests {
 
     #[test]
     fn combine_removed_soup() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) },
-            Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
-        
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![
+                Soup {
+                    name: "some-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: meta(vec![]),
+                },
+                Soup {
+                    name: "some-other-dep".to_owned(),
+                    version: "1.0.0".to_owned(),
+                    meta: meta(vec![]),
+                },
+            ],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
+
         base.apply(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
@@ -129,12 +176,22 @@ mod tests {
 
     #[test]
     fn no_update_preserves_meta() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("some-meta", "some-value")]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
-        ]);
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("some-meta", "some-value")]),
+            }],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
 
         base.apply(other);
         assert_eq!(1, base.contexts.len());
@@ -147,12 +204,22 @@ mod tests {
 
     #[test]
     fn update_soup_version_preserves_meta() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("some-meta", "some-value")]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: meta(vec![]) }
-        ]);
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("some-meta", "some-value")]),
+            }],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.2.0".to_owned(),
+                meta: meta(vec![]),
+            }],
+        );
 
         base.apply(other);
         assert_eq!(1, base.contexts.len());
@@ -165,32 +232,52 @@ mod tests {
 
     #[test]
     fn append_meta_from_other() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("some-meta", "some-value")]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
-        ]);
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("some-meta", "some-value")]),
+            }],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("requirements", "")]),
+            }],
+        );
         base.apply(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
         assert_eq!("some-dep", soup.name);
         assert_eq!("1.0.0", soup.version);
-        assert_eq!(meta(vec![
-            ("some-meta", "some-value"),
-            ("requirements", "")
-        ]), soup.meta);
+        assert_eq!(
+            meta(vec![("some-meta", "some-value"), ("requirements", "")]),
+            soup.meta
+        );
     }
 
     #[test]
     fn append_meta_from_other_no_overwrite() {
-        let mut base = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "a-requirement")]) }
-        ]);
-        let other = create_contexts("src/package.json", vec![
-            Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
-        ]);
+        let mut base = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("requirements", "a-requirement")]),
+            }],
+        );
+        let other = create_contexts(
+            "src/package.json",
+            vec![Soup {
+                name: "some-dep".to_owned(),
+                version: "1.0.0".to_owned(),
+                meta: meta(vec![("requirements", "")]),
+            }],
+        );
 
         base.apply(other);
         assert_eq!(1, base.contexts.len());
