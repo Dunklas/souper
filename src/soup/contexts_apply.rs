@@ -41,8 +41,8 @@ fn combine_soups(base: BTreeSet<Soup>, other: BTreeSet<Soup>) -> BTreeSet<Soup> 
         .collect::<BTreeSet<Soup>>()
 }
 
-fn combine_meta(mut base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
-    let mut patch = patch.into_iter().collect::<Vec<(String, Value)>>();
+fn combine_meta(mut base: Map<String, Value>, other: Map<String, Value>) -> Map<String, Value> {
+    let mut patch = other.into_iter().collect::<Vec<(String, Value)>>();
     while let Some((key, value)) = patch.pop() {
         if let serde_json::map::Entry::Vacant(entry) = base.entry(key) {
             entry.insert(value);
