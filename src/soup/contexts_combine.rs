@@ -14,16 +14,16 @@ impl SoupContexts {
                 continue;
             }
 
-            let meta_by_name = match self.contexts.get(&path) {
-                Some(self_soups) => self_soups.iter()
-                    .map(|soup| (&soup.name, &soup.meta))
-                    .collect::<HashMap<&String, &Map<String, Value>>>(),
+            let mut meta_by_name = match self.contexts.remove(&path) {
+                Some(self_soups) => self_soups.into_iter()
+                    .map(|soup| (soup.name, soup.meta))
+                    .collect::<HashMap<String, Map<String, Value>>>(),
                 None => HashMap::new()
             };
 
             let result_soups = other_soups.into_iter()
                 .map(|other_soup| {
-                    let meta = match meta_by_name.get(&other_soup.name) {
+                    let meta = match meta_by_name.remove(&other_soup.name) {
                         Some(meta) => combine_meta(meta, other_soup.meta),
                         None => other_soup.meta
                     };
@@ -36,15 +36,15 @@ impl SoupContexts {
     }
 }
 
-
-fn combine_meta(base: &Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
-    let mut result = base.clone();
-    for (key, value) in patch {
+fn combine_meta(base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
+    let mut base = base;
+    let mut patch = patch.into_iter().collect::<Vec<(String, Value)>>();
+    while let Some((key, value)) = patch.pop() {
         if !base.contains_key(&key) {
-            result.insert(key, value);
+            base.insert(key, value);
         }
     }
-    result
+    base
 }
 
 #[cfg(test)]
