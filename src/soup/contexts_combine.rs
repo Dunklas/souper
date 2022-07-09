@@ -1,4 +1,5 @@
 use std::collections::{HashMap,BTreeSet};
+use std::collections::btree_map::Entry;
 use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
@@ -8,23 +9,22 @@ impl SoupContexts {
 
         let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
         while let Some((path, other_soups)) = other_contexts.pop() {
-            #[allow(clippy::map_entry)]
-            if !self.contexts.contains_key(&path) {
-                self.contexts.insert(path, other_soups);
-                continue;
-            }
-
-            let mut meta_by_name = match self.contexts.remove(&path) {
-                Some(self_soups) => self_soups.into_iter()
-                    .map(|soup| (soup.name, soup.meta))
-                    .collect::<HashMap<String, Map<String, Value>>>(),
-                None => HashMap::new()
+            let (path, self_soups) = match self.contexts.entry(path) {
+                Entry::Vacant(entry) => {
+                    entry.insert(other_soups);
+                    continue;
+                },
+                Entry::Occupied(entry) => entry.remove_entry()
             };
+
+            let mut self_meta = self_soups.into_iter()
+                .map(|soup| (soup.name, soup.meta))
+                .collect::<HashMap<String, Map<String, Value>>>();
 
             let result_soups = other_soups.into_iter()
                 .map(|other_soup| {
-                    let meta = match meta_by_name.remove(&other_soup.name) {
-                        Some(meta) => combine_meta(meta, other_soup.meta),
+                    let meta = match self_meta.remove(&other_soup.name) {
+                        Some(self_meta) => combine_meta(self_meta, other_soup.meta),
                         None => other_soup.meta
                     };
                     Soup { name: other_soup.name, version: other_soup.version, meta }
@@ -32,15 +32,15 @@ impl SoupContexts {
                 .collect::<BTreeSet<Soup>>();
 
             self.contexts.insert(path, result_soups);
-        }
+        };
     }
 }
 
 fn combine_meta(mut base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
     let mut patch = patch.into_iter().collect::<Vec<(String, Value)>>();
     while let Some((key, value)) = patch.pop() {
-        if !base.contains_key(&key) {
-            base.insert(key, value);
+        if let serde_json::map::Entry::Vacant(entry) = base.entry(key) {
+            entry.insert(value);
         }
     }
     base
