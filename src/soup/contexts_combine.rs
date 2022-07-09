@@ -36,8 +36,7 @@ impl SoupContexts {
     }
 }
 
-fn combine_meta(base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
-    let mut base = base;
+fn combine_meta(mut base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
     let mut patch = patch.into_iter().collect::<Vec<(String, Value)>>();
     while let Some((key, value)) = patch.pop() {
         if !base.contains_key(&key) {
