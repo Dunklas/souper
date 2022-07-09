@@ -84,7 +84,7 @@ fn main() {
         }
     };
 
-    current_contexts.combine(&scanned_contexts);
+    current_contexts.combine(scanned_contexts);
     if let Err(e) = current_contexts.write_to_file(&output_path) {
         panic!("{}", e);
     }

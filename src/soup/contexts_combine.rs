@@ -1,45 +1,49 @@
+use std::collections::{HashMap,BTreeSet};
+use std::collections::btree_map::Entry;
 use serde_json::{Map, Value};
 use crate::soup::model::{Soup, SoupContexts};
 
 impl SoupContexts {
-    pub fn combine(&mut self, other: &SoupContexts) {
-        for (path, soups) in other.contexts() {
-            if !self.contexts.contains_key(path) {
-                self.contexts.insert(path.clone(), soups.clone());
-            }
-        }
+    pub fn combine(&mut self, other: SoupContexts) {
         self.contexts.retain(|path,_| other.contexts().contains_key(path));
-        
-        for (path, other_soups) in other.contexts() {
-            let self_soups = self.contexts.get_mut(path).unwrap();
 
-            for other_soup in other_soups {
-                let soup = Soup {
-                    name: other_soup.name.clone(),
-                    version: other_soup.version.clone(),
-                    meta: match self_soups.iter().find(|x| x.name == other_soup.name) {
-                        Some(soup) => combine_meta(&soup.meta, &other_soup.meta),
-                        None => other_soup.meta.clone()
-                    }
-                };
-                self_soups.remove(&soup);
-                self_soups.insert(soup);
-            }
+        let mut other_contexts = other.contexts.into_iter().collect::<Vec<(_, _)>>();
+        while let Some((path, other_soups)) = other_contexts.pop() {
+            let (path, self_soups) = match self.contexts.entry(path) {
+                Entry::Vacant(entry) => {
+                    entry.insert(other_soups);
+                    continue;
+                },
+                Entry::Occupied(entry) => entry.remove_entry()
+            };
 
-            self_soups.retain(|soup| other_soups.contains(soup));
-        }
+            let mut self_meta = self_soups.into_iter()
+                .map(|soup| (soup.name, soup.meta))
+                .collect::<HashMap<String, Map<String, Value>>>();
+
+            let result_soups = other_soups.into_iter()
+                .map(|other_soup| {
+                    let meta = match self_meta.remove(&other_soup.name) {
+                        Some(self_meta) => combine_meta(self_meta, other_soup.meta),
+                        None => other_soup.meta
+                    };
+                    Soup { name: other_soup.name, version: other_soup.version, meta }
+                })
+                .collect::<BTreeSet<Soup>>();
+
+            self.contexts.insert(path, result_soups);
+        };
     }
 }
 
-
-fn combine_meta(base: &Map<String, Value>, patch: &Map<String, Value>) -> Map<String, Value> {
-    let mut result = base.clone();
-    for (key, value) in patch {
-        if !base.contains_key(key) {
-            result.insert(key.clone(), value.clone());
+fn combine_meta(mut base: Map<String, Value>, patch: Map<String, Value>) -> Map<String, Value> {
+    let mut patch = patch.into_iter().collect::<Vec<(String, Value)>>();
+    while let Some((key, value)) = patch.pop() {
+        if let serde_json::map::Entry::Vacant(entry) = base.entry(key) {
+            entry.insert(value);
         }
     }
-    result
+    base
 }
 
 #[cfg(test)]
@@ -75,7 +79,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         assert_eq!(true, base.contexts.contains_key("src/package.json"));
     }
@@ -87,7 +91,7 @@ mod tests {
         ]);
         let other = empty_contexts();
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(true, base.contexts.is_empty());
     }
 
@@ -101,7 +105,7 @@ mod tests {
             Soup { name: "some-other-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         assert_eq!(2, soups.len());
@@ -117,7 +121,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
         
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         assert_eq!(1, soups.len());
@@ -132,7 +136,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -150,7 +154,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.2.0".to_owned(), meta: meta(vec![]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -167,7 +171,7 @@ mod tests {
         let other = create_contexts("src/package.json", vec![
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
@@ -188,7 +192,7 @@ mod tests {
             Soup { name: "some-dep".to_owned(), version: "1.0.0".to_owned(), meta: meta(vec![("requirements", "")]) }
         ]);
 
-        base.combine(&other);
+        base.combine(other);
         assert_eq!(1, base.contexts.len());
         let soups = base.contexts.get("src/package.json").unwrap();
         let soup = soups.iter().find(|s| s.name == "some-dep").unwrap();
