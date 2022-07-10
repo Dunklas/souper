@@ -56,7 +56,7 @@ fn attribute_value(
     key: &str,
 ) -> Result<String, SoupSourceParseError> {
     match attributes.get(key.as_bytes()) {
-        Some(value) => match String::from_utf8(value.clone()) {
+        Some(value) => match String::from_utf8(value.to_owned()) {
             Ok(value) => Ok(value),
             Err(_e) => {
                 return Err(SoupSourceParseError {
