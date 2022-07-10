@@ -71,7 +71,7 @@ fn main() {
         }
         false => SoupContexts::empty()
     };
-    let result = match dir_scan::scan2(&target_dir, &exclude_dirs) {
+    let result = match dir_scan::scan(&target_dir, &exclude_dirs) {
         Ok(result) => result,
         Err(e) => {
             panic!("{}", e);

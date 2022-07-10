@@ -20,7 +20,7 @@ const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "obj"
 ];
 
-pub fn scan2(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, Vec<Box<dyn SoupParse>>)>, Error>{
+pub fn scan(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, Vec<Box<dyn SoupParse>>)>, Error>{
     let mut sources: Vec<(PathBuf, Vec<Box<dyn SoupParse>>)> = Vec::new();
     'entries: for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -38,7 +38,7 @@ pub fn scan2(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf,
                     continue 'entries;
                 }
             }
-            let mut content = scan2(&path, exclude_dirs)?;
+            let mut content = scan(&path, exclude_dirs)?;
             sources.append(&mut content);
             continue;
         }
