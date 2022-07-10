@@ -7,7 +7,7 @@ use serde_json::{
 };
 use regex::Regex;
 use lazy_static::lazy_static;
-use super::SoupSource;
+use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct DockerBase {}
@@ -16,7 +16,7 @@ lazy_static! {
     static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[\w/]+ +)?(?P<name>[\w\-\./]+):(?P<version>[\w\.-]+) *(?:AS +[\w\-]+)? *$").unwrap();
 }
 
-impl SoupSource for DockerBase {
+impl SoupParse for DockerBase {
     fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut result: BTreeSet<Soup> = BTreeSet::new();
         let lines = content.lines();

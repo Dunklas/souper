@@ -7,7 +7,7 @@ use serde_json::{
 };
 use serde::Deserialize;
 use crate::soup::model::{Soup, SoupSourceParseError};
-use super::SoupSource;
+use super::SoupParse;
 
 pub struct PackageJson {}
 
@@ -16,7 +16,7 @@ struct Content {
     dependencies: HashMap<String, String>
 }
 
-impl SoupSource for PackageJson {
+impl SoupParse for PackageJson {
     fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let content: Content = match serde_json::from_str(content) {
             Ok(content) => content,

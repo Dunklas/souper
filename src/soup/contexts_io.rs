@@ -9,47 +9,33 @@ use serde_json::{
 
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
 use crate::parse::{
-    SoupSource,
-    package_json::PackageJson,
-    csproj::CsProj,
-    docker_base::DockerBase
+    SoupParse,
 };
 use crate::utils;
 
 impl SoupContexts {
     pub fn from_paths<P: AsRef<Path>>(
-        paths: Vec<PathBuf>,
+        paths: Vec<(PathBuf, Vec<Box<dyn SoupParse>>)>,
         source_dir: P,
         default_meta: Map<String, Value>
     ) -> Result<SoupContexts, SouperIoError> {
         let mut soup_contexts: BTreeMap<String, BTreeSet<Soup>> = BTreeMap::new();
-        for path in paths {
+        for (path, parsers) in paths {
             let file_content = match fs::read_to_string(&path) {
                 Ok(content) => content,
                 Err(e) => return Err(SouperIoError{
                     message: format!("Not able to read file: {} ({})", path.display(), e)
                 })
             };
-            let filename = match path.file_name() {
-                Some(filename) => filename,
-                None => {
-                    return Err(SouperIoError{
-                        message: format!("Not able to obtain filename for path: {}", path.display())
-                    });
-                }
-            };
-            let parse_result = match filename.to_str() {
-                    Some("package.json") => PackageJson{}.soups(&file_content, &default_meta),
-                    Some(x) if x.contains(".csproj") => CsProj{}.soups(&file_content, &default_meta),
-                    Some(x) if x.contains("Dockerfile") => DockerBase{}.soups(&file_content, &default_meta),
-                    _ => {
-                        panic!("No parser found for: {:?}", filename)
-                    }
-            };
-            let soups = match parse_result {
-                Ok(soups) => soups,
+            let parse_results: Result<Vec<_>, _> = parsers.into_iter()
+                .map(|y| y.soups(&file_content, &default_meta))
+                .collect();
+            let soups = match parse_results {
+                Ok(soups_iter) => soups_iter.into_iter()
+                    .flatten()
+                    .collect(),
                 Err(e) => {
-                    return Err(SouperIoError{
+                    return Err(SouperIoError {
                         message: format!("Unable to parse {} due to: {}", path.display(), e)
                     });
                 }

@@ -7,12 +7,12 @@ use serde_json::{
 };
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use super::SoupSource;
+use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct CsProj {}
 
-impl SoupSource for CsProj {
+impl SoupParse for CsProj {
     fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut reader = Reader::from_str(content);
         reader.trim_text(true);
