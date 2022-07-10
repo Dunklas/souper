@@ -1,9 +1,15 @@
 use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
 use serde_json::{Map, Value};
-use std::collections::BTreeSet;
+use serde::Deserialize;
+use std::collections::{BTreeSet, HashMap, BTreeMap};
 
 pub struct Cargo {}
+
+#[derive(Deserialize)]
+struct Content {
+    dependencies: HashMap<String, toml::Value>
+}
 
 impl SoupParse for Cargo {
     fn soups(
@@ -11,7 +17,28 @@ impl SoupParse for Cargo {
         content: &str,
         default_meta: &Map<String, Value>,
     ) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        Ok(BTreeSet::new())
+        let content: Content = match toml::from_str(content) {
+            Ok(content) => content,
+            Err(e) => {
+                return Err(SoupSourceParseError{
+                    message: format!("Invalid Cargo.toml ({})", e)
+                });
+            }
+        };
+        Ok(content.dependencies.into_iter()
+            .map(|(dependency, value)| {
+                match value {
+                    toml::Value::String(str) => Soup {
+                        name: dependency,
+                        version: str.to_owned(),
+                        meta: default_meta.clone()
+                    },
+                    _ => {
+                        panic!("hej");
+                    }
+                }
+            })
+            .collect::<BTreeSet<Soup>>())
     }
 }
 
