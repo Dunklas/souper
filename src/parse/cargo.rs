@@ -132,4 +132,25 @@ quick-xml = "0.23.0"
             soups
         );
     }
+
+    #[test]
+    fn no_dependencies() {
+        let content = r#"
+[dependencies] 
+        "#;
+        let result = Cargo{}.soups(content, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(0, soups.len());
+    }
+
+    #[test]
+    fn missing_version() {
+        let content = r#"
+[dependencies]
+serde_json = { verzion = "1.0.82", features = ["preserve_order"] }
+        "#;
+        let result = Cargo{}.soups(content, &Map::new());
+        assert_eq!(true, result.is_err());
+    }
 }
