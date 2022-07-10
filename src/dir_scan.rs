@@ -29,12 +29,12 @@ pub fn scan(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, 
         let file_name = entry.file_name();
         if file_type.is_dir() {
             for ex in GLOBAL_EXCLUDE_DIRS {
-                if file_name.eq(ex) {
+                if file_name == ex {
                     continue 'entries;
                 }
             }
             for ex in exclude_dirs {
-                if path.eq(ex) {
+                if path == *ex {
                     continue 'entries;
                 }
             }
