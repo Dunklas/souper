@@ -25,20 +25,39 @@ impl SoupParse for Cargo {
                 });
             }
         };
-        Ok(content.dependencies.into_iter()
+        content.dependencies.into_iter()
             .map(|(dependency, value)| {
                 match value {
-                    toml::Value::String(str) => Soup {
+                    toml::Value::String(str) => Ok(Soup {
                         name: dependency,
                         version: str.to_owned(),
                         meta: default_meta.clone()
+                    }),
+                    toml::Value::Table(table) => match table.get("version") {
+                        Some(version) => Ok(Soup {
+                            name: dependency.to_owned(),
+                            version: match version.as_str() {
+                                Some(v) => v.to_owned(),
+                                None => {
+                                    return Err(SoupSourceParseError{
+                                        message: format!("Invalid version for: {}", dependency)
+                                    });
+                                }
+                            },
+                            meta: default_meta.clone()
+                        }),
+                        None => {
+                            return Err(SoupSourceParseError {
+                                message: format!("Missing version for: {}", dependency)
+                            });
+                        }
                     },
-                    _ => {
-                        panic!("hej");
-                    }
+                    _ => Err(SoupSourceParseError{
+                        message: format!("Malformed dependency: {}", dependency)
+                    })
                 }
             })
-            .collect::<BTreeSet<Soup>>())
+            .collect::<Result<BTreeSet<Soup>, _>>()
     }
 }
 
@@ -63,5 +82,24 @@ some-dep = "6.6.6"
                 meta: Map::new()
             })
         );
+    }
+
+    #[test]
+    fn table_dependency() {
+        let content = r#"
+[dependencies]
+serde = { version = "1.0.137", features = ["derive"] }
+        "#;
+        let result = Cargo{}.soups(content, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(
+            true,
+            soups.contains(&Soup {
+                name: "serde".to_owned(),
+                version: "1.0.137".to_owned(),
+                meta: Map::new()
+            })
+        )
     }
 }
