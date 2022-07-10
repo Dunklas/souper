@@ -1,6 +1,5 @@
 use std::{
-    collections::BTreeSet,
-    io
+    collections::BTreeSet
 };
 use serde_json::{
     Map,
@@ -17,28 +16,22 @@ lazy_static! {
     static ref BASE_PATTERN: Regex = Regex::new(r"^ *FROM +(?:--platform=[\w/]+ +)?(?P<name>[\w\-\./]+):(?P<version>[\w\.-]+) *(?:AS +[\w\-]+)? *$").unwrap();
 }
 
-impl<R> SoupSource<R> for DockerBase
-where
-    R: io::BufRead,
-{
-    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        Ok(reader.lines()
-            .filter_map(|line| line.ok())
-            .filter_map(|line| {
-                match BASE_PATTERN.captures(&line) {
-                    Some(captures) => {
-                        let name = captures.name("name").unwrap().as_str();
-                        let version = captures.name("version").unwrap().as_str();
-                        Some(Soup{
-                            name: name.to_owned(),
-                            version: version.to_owned(),
-                            meta: default_meta.clone()
-                        })
-                    },
-                    None => None
-                }
-            })
-            .collect::<BTreeSet<Soup>>())
+impl SoupSource for DockerBase {
+    fn soups(content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+        let mut result: BTreeSet<Soup> = BTreeSet::new();
+        let lines = content.lines();
+        for line in lines {
+            if let Some(captures) = BASE_PATTERN.captures(line) {
+                let name = captures.name("name").unwrap().as_str();
+                let version = captures.name("version").unwrap().as_str();
+                result.insert(Soup{
+                    name: name.to_owned(),
+                    version: version.to_owned(),
+                    meta: default_meta.clone()
+                });
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -50,7 +43,7 @@ mod tests {
     fn simple_base() {
         let content = r#"
 FROM postgres:14.4
-        "#.as_bytes();
+        "#;
 
         let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -67,7 +60,7 @@ FROM postgres:14.4
     fn named_base() {
         let content = r#"
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
-        "#.as_bytes();
+        "#;
 
         let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -84,7 +77,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
     fn with_platform() {
         let content = r#"
 FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
-        "#.as_bytes();
+        "#;
 
         let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -101,7 +94,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
     fn no_from_statement() {
         let content = r#"
 COPY --chown app:app . ./
-        "#.as_bytes();
+        "#;
         let result = DockerBase::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();

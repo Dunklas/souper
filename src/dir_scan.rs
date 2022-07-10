@@ -1,4 +1,13 @@
-use std::{fs, io, path};
+use std::{
+    fs,
+    io::{
+        Error
+    },
+    path::{
+        PathBuf
+    }
+};
+use crate::parse::SoupSource;
 
 const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "node_modules",
@@ -6,8 +15,12 @@ const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
     "obj"
 ];
 
-pub fn scan(dir: &path::PathBuf, exclude_dirs: &Vec<path::PathBuf>) -> Result<Vec<path::PathBuf>, io::Error> {
-    let mut files: Vec<path::PathBuf> = Vec::new();
+// pub fn scan(dir: PathBuf, exclude_dirs: Vec<PathBuf>) -> Result<Vec<(PathBuf, Box<dyn SoupSource>)>, Error>{
+
+// }
+
+pub fn scan(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<PathBuf>, Error> {
+    let mut files: Vec<PathBuf> = Vec::new();
     'entries: for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();

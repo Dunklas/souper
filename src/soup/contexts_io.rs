@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::File;
+use std::fs;
 use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 use serde_json::{
@@ -24,13 +24,12 @@ impl SoupContexts {
     ) -> Result<SoupContexts, SouperIoError> {
         let mut soup_contexts: BTreeMap<String, BTreeSet<Soup>> = BTreeMap::new();
         for path in paths {
-            let file = match File::open(&path) {
-                Ok(file) => file,
+            let file_content = match fs::read_to_string(&path) {
+                Ok(content) => content,
                 Err(e) => return Err(SouperIoError{
-                    message: format!("Not able to open file: {} ({})", path.display(), e)
+                    message: format!("Not able to read file: {} ({})", path.display(), e)
                 })
             };
-            let reader = BufReader::new(file);
             let filename = match path.file_name() {
                 Some(filename) => filename,
                 None => {
@@ -40,9 +39,9 @@ impl SoupContexts {
                 }
             };
             let parse_result = match filename.to_str() {
-                    Some("package.json") => PackageJson::soups(reader, &default_meta),
-                    Some(x) if x.contains(".csproj") => CsProj::soups(reader, &default_meta),
-                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(reader, &default_meta),
+                    Some("package.json") => PackageJson::soups(&file_content, &default_meta),
+                    Some(x) if x.contains(".csproj") => CsProj::soups(&file_content, &default_meta),
+                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(&file_content, &default_meta),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }
@@ -81,7 +80,7 @@ impl SoupContexts {
     }
 
     pub fn from_output_file<P: AsRef<Path>>(file_path: P) -> Result<SoupContexts, SouperIoError> {
-        let output_file = match File::open(file_path.as_ref()) {
+        let output_file = match fs::File::open(file_path.as_ref()) {
             Ok(file) => file,
             Err(e) => {
                 return Err(SouperIoError{
@@ -102,7 +101,7 @@ impl SoupContexts {
     }
 
     pub fn write_to_file<P: AsRef<Path>>(&self, file_path: P) -> Result<(), SouperIoError> {
-        let mut output_file = match File::create(&file_path) {
+        let mut output_file = match fs::File::create(&file_path) {
             Ok(file) => file,
             Err(e) => return Err(SouperIoError{
                 message: format!("Not able to create file: {} ({})", file_path.as_ref().display(), e)

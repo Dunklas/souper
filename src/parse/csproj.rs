@@ -1,6 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap},
-    io
+    collections::{BTreeSet, HashMap}
 };
 use serde_json::{
     Map,
@@ -13,12 +12,9 @@ use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct CsProj {}
 
-impl<R> SoupSource<R> for CsProj
-where
-    R: io::BufRead,
-{
-    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        let mut reader = Reader::from_reader(reader);
+impl SoupSource for CsProj {
+    fn soups(content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+        let mut reader = Reader::from_str(content);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
 
@@ -83,7 +79,7 @@ mod tests {
         <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.2.1" />
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
         let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -106,7 +102,7 @@ mod tests {
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
         let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -126,7 +122,7 @@ mod tests {
     <ItemGroup>
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
         let result = CsProj::soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
