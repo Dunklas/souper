@@ -35,11 +35,9 @@ impl SoupParse for DockerBase {
 fn named_capture(captures: &regex::Captures, name: &str) -> Result<String, SoupSourceParseError> {
     match captures.name(name) {
         Some(value) => Ok(value.as_str().to_owned()),
-        None => {
-            return Err(SoupSourceParseError {
-                message: "Unable to parse FROM statement in dockerfile".to_owned(),
-            });
-        }
+        None => Err(SoupSourceParseError {
+            message: "Unable to parse FROM statement in dockerfile".to_owned(),
+        }),
     }
 }
 
