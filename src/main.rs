@@ -1,17 +1,10 @@
-use std::{
-    env,
-    path
-};
-use serde_json::{
-    json,
-    Map,
-    Value
-};
 use clap::Parser;
+use serde_json::{json, Map, Value};
+use std::{env, path};
 
-mod soup;
-mod parse;
 mod dir_scan;
+mod parse;
+mod soup;
 mod utils;
 
 use soup::model::SoupContexts;
@@ -34,7 +27,7 @@ struct Cli {
 
     // Key to add in meta property
     #[clap(short = 'm', long = "meta-key")]
-    meta_keys: Vec<String>
+    meta_keys: Vec<String>,
 }
 
 fn main() {
@@ -46,7 +39,7 @@ fn main() {
             Err(e) => {
                 panic!("baj {:?}", e);
             }
-        }
+        },
     };
     let path = target_dir.as_path();
     if !path.exists() || !path.is_dir() {
@@ -58,7 +51,9 @@ fn main() {
     }
     let exclude_dirs = args.exclude_dirs;
 
-    let default_meta = args.meta_keys.into_iter()
+    let default_meta = args
+        .meta_keys
+        .into_iter()
         .map(|meta_key| (meta_key, json!("")))
         .collect::<Map<String, Value>>();
 
@@ -68,8 +63,8 @@ fn main() {
             Err(e) => {
                 panic!("{}", e);
             }
-        }
-        false => SoupContexts::empty()
+        },
+        false => SoupContexts::empty(),
     };
     let result = match dir_scan::scan(&target_dir, &exclude_dirs) {
         Ok(result) => result,

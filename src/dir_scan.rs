@@ -1,28 +1,14 @@
-use std::{
-    fs,
-    io::{
-        Error
-    },
-    path::{
-        PathBuf
-    }
-};
-use crate::parse::{
-    SoupParse,
-    package_json::PackageJson,
-    csproj::CsProj,
-    docker_base::DockerBase
-};
+use crate::parse::{csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, SoupParse};
+use std::{fs, io::Error, path::PathBuf};
 
-const GLOBAL_EXCLUDE_DIRS: [&str; 3] = [
-    "node_modules",
-    "bin",
-    "obj"
-];
+const GLOBAL_EXCLUDE_DIRS: [&str; 3] = ["node_modules", "bin", "obj"];
 
 pub type SoupParsers = Vec<Box<dyn SoupParse>>;
 
-pub fn scan(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, SoupParsers)>, Error>{
+pub fn scan(
+    dir: &PathBuf,
+    exclude_dirs: &Vec<PathBuf>,
+) -> Result<Vec<(PathBuf, SoupParsers)>, Error> {
     let mut sources: Vec<(PathBuf, Vec<Box<dyn SoupParse>>)> = Vec::new();
     'entries: for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -47,18 +33,17 @@ pub fn scan(dir: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, 
         if file_type.is_file() {
             match file_name.to_str() {
                 Some("package.json") => {
-                    sources.push((path, vec![Box::new(PackageJson{})]));
-                },
+                    sources.push((path, vec![Box::new(PackageJson {})]));
+                }
                 Some(file_name_str) if file_name_str.contains(".csproj") => {
-                    sources.push((path, vec![Box::new(CsProj{})]));
-                },
+                    sources.push((path, vec![Box::new(CsProj {})]));
+                }
                 Some(file_name_str) if file_name_str.contains("Dockerfile") => {
-                    sources.push((path, vec![Box::new(DockerBase{})]));
-                },
+                    sources.push((path, vec![Box::new(DockerBase {})]));
+                }
                 _ => {}
             }
         }
     }
     Ok(sources)
 }
-

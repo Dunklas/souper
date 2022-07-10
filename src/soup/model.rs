@@ -1,24 +1,15 @@
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::{
-    collections::{
-        BTreeMap,
-        BTreeSet
-    },
-    fmt
-};
-use serde::{
-    Deserialize,
-    Serialize
-};
-use serde_json::{
-    Map,
-    Value
+    collections::{BTreeMap, BTreeSet},
+    fmt,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Soup {
     pub name: String,
     pub version: String,
-    pub meta: Map<String, Value>
+    pub meta: Map<String, Value>,
 }
 
 impl PartialEq for Soup {
@@ -37,19 +28,21 @@ impl Ord for Soup {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.name.cmp(&other.name) {
             std::cmp::Ordering::Equal => self.version.cmp(&other.version),
-            _ => self.name.cmp(&other.name)
+            _ => self.name.cmp(&other.name),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SoupContexts {
-    pub contexts: BTreeMap<String, BTreeSet<Soup>>
+    pub contexts: BTreeMap<String, BTreeSet<Soup>>,
 }
 
 impl SoupContexts {
     pub fn empty() -> SoupContexts {
-        SoupContexts { contexts: BTreeMap::new() }
+        SoupContexts {
+            contexts: BTreeMap::new(),
+        }
     }
     pub fn contexts(&self) -> &BTreeMap<String, BTreeSet<Soup>> {
         &self.contexts
@@ -57,7 +50,7 @@ impl SoupContexts {
 }
 
 pub struct SouperIoError {
-    pub message: String
+    pub message: String,
 }
 
 impl fmt::Display for SouperIoError {
@@ -73,7 +66,7 @@ impl fmt::Debug for SouperIoError {
 }
 
 pub struct SoupSourceParseError {
-    pub message: String
+    pub message: String,
 }
 
 impl fmt::Display for SoupSourceParseError {
@@ -96,30 +89,33 @@ mod tests {
 
     #[test]
     fn soup_equal() {
-        let s1 = Soup{
+        let s1 = Soup {
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: Map::new()
+            meta: Map::new(),
         };
-        let s2 = Soup{
+        let s2 = Soup {
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: json!({"requirement": "should do this and that"}).as_object().unwrap().clone()
+            meta: json!({"requirement": "should do this and that"})
+                .as_object()
+                .unwrap()
+                .clone(),
         };
         assert_eq!(s1, s2);
     }
 
     #[test]
     fn soup_not_equal() {
-        let s1 = Soup{
+        let s1 = Soup {
             name: "some-dependency".to_owned(),
             version: "1.0.0".to_owned(),
-            meta: Map::new()
+            meta: Map::new(),
         };
-        let s2 = Soup{
+        let s2 = Soup {
             name: "some-dependency".to_owned(),
             version: "1.0.1".to_owned(),
-            meta: Map::new()
+            meta: Map::new(),
         };
         assert_ne!(s1, s2);
     }
