@@ -1,4 +1,6 @@
-use crate::parse::{csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, cargo::Cargo, SoupParse};
+use crate::parse::{
+    cargo::Cargo, csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, SoupParse,
+};
 use std::{fs, io::Error, path::PathBuf};
 
 const GLOBAL_EXCLUDE_DIRS: [&str; 3] = ["node_modules", "bin", "obj"];
