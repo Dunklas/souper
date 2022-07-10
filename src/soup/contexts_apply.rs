@@ -17,16 +17,19 @@ impl SoupContexts {
                 }
                 Entry::Occupied(entry) => entry.remove_entry(),
             };
-            self.contexts.insert(path, combine_soups(self_soups, other_soups));
+            self.contexts
+                .insert(path, combine_soups(self_soups, other_soups));
         }
     }
 }
 
 fn combine_soups(base: BTreeSet<Soup>, other: BTreeSet<Soup>) -> BTreeSet<Soup> {
-    let mut base_meta = base.into_iter()
+    let mut base_meta = base
+        .into_iter()
         .map(|soup| (soup.name, soup.meta))
         .collect::<HashMap<String, Map<String, Value>>>();
-    other.into_iter()
+    other
+        .into_iter()
         .map(|other_soup| {
             let meta = match base_meta.remove(&other_soup.name) {
                 Some(self_meta) => combine_meta(self_meta, other_soup.meta),

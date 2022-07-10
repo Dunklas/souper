@@ -1,9 +1,12 @@
 use std::path;
 
-pub fn relative_path<P: AsRef<path::Path>>(full_path: P, source_dir: P) -> Result<path::PathBuf, path::StripPrefixError>{
+pub fn relative_path<P: AsRef<path::Path>>(
+    full_path: P,
+    source_dir: P,
+) -> Result<path::PathBuf, path::StripPrefixError> {
     match full_path.as_ref().strip_prefix(source_dir) {
         Ok(res) => Ok(res.to_path_buf()),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 

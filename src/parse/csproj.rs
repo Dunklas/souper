@@ -1,19 +1,18 @@
-use std::{
-    collections::{BTreeSet, HashMap}
-};
-use serde_json::{
-    Map,
-    Value
-};
-use quick_xml::events::Event;
-use quick_xml::Reader;
 use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use serde_json::{Map, Value};
+use std::collections::{BTreeSet, HashMap};
 
 pub struct CsProj {}
 
 impl SoupParse for CsProj {
-    fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(
+        &self,
+        content: &str,
+        default_meta: &Map<String, Value>,
+    ) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut reader = Reader::from_str(content);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
@@ -22,23 +21,26 @@ impl SoupParse for CsProj {
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => if let b"PackageReference" = e.name() {
-                    let attributes_by_key = e.attributes()
-                        .filter_map(|attribute| attribute.ok())
-                        .map(|attribute| (attribute.key.to_vec(), attribute.value.to_vec()))
-                        .collect::<HashMap<Vec<u8>, Vec<u8>>>();
-                    let name = attribute_value(&attributes_by_key, "Include")?;
-                    let version = attribute_value(&attributes_by_key, "Version")?;
+                Ok(Event::Start(ref e)) => {
+                    if let b"PackageReference" = e.name() {
+                        let attributes_by_key = e
+                            .attributes()
+                            .filter_map(|attribute| attribute.ok())
+                            .map(|attribute| (attribute.key.to_vec(), attribute.value.to_vec()))
+                            .collect::<HashMap<Vec<u8>, Vec<u8>>>();
+                        let name = attribute_value(&attributes_by_key, "Include")?;
+                        let version = attribute_value(&attributes_by_key, "Version")?;
                         soups.insert(Soup {
                             name,
                             version,
-                            meta: default_meta.clone()
+                            meta: default_meta.clone(),
                         });
-                },
+                    }
+                }
                 Ok(Event::Eof) => break,
                 Err(e) => {
-                    return Err(SoupSourceParseError{
-                        message: format!("Invalid XML structure {}", e)
+                    return Err(SoupSourceParseError {
+                        message: format!("Invalid XML structure {}", e),
                     });
                 }
                 _ => {}
@@ -49,19 +51,22 @@ impl SoupParse for CsProj {
     }
 }
 
-fn attribute_value(attributes: &HashMap<Vec<u8>, Vec<u8>>, key: &str) -> Result<String, SoupSourceParseError> {
+fn attribute_value(
+    attributes: &HashMap<Vec<u8>, Vec<u8>>,
+    key: &str,
+) -> Result<String, SoupSourceParseError> {
     match attributes.get(key.as_bytes()) {
-        Some(value) => match String::from_utf8(value.clone()) {
+        Some(value) => match String::from_utf8(value.to_owned()) {
             Ok(value) => Ok(value),
             Err(_e) => {
-                return Err(SoupSourceParseError{
-                    message: format!("Unable to parse attribute {} as utf8", key)
+                return Err(SoupSourceParseError {
+                    message: format!("Unable to parse attribute {} as utf8", key),
                 });
             }
         },
         None => {
-            return Err(SoupSourceParseError{
-                message: format!("Missing required attribute: {}", key)
+            return Err(SoupSourceParseError {
+                message: format!("Missing required attribute: {}", key),
             })
         }
     }
@@ -81,14 +86,14 @@ mod tests {
 </Project>
         "#;
 
-        let result = CsProj{}.soups(content, &Map::new());
+        let result = CsProj {}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
         let expected_soup = Soup {
             name: "Azure.Messaging.ServiceBus".to_owned(),
             version: "7.2.1".to_owned(),
-            meta: Map::new()
+            meta: Map::new(),
         };
         assert_eq!(true, soups.contains(&expected_soup));
     }
@@ -104,14 +109,24 @@ mod tests {
 </Project>
         "#;
 
-        let result = CsProj{}.soups(content, &Map::new());
+        let result = CsProj {}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
         let expected_soups = vec![
-            Soup { name: "Azure.Messaging.ServiceBus".to_owned(), version: "7.2.1".to_owned(), meta: Map::new() },
-            Soup { name: "Swashbuckle.AspNetCore".to_owned(), version: "6.3.1".to_owned(), meta: Map::new() }
-        ].into_iter().collect::<BTreeSet<Soup>>();
+            Soup {
+                name: "Azure.Messaging.ServiceBus".to_owned(),
+                version: "7.2.1".to_owned(),
+                meta: Map::new(),
+            },
+            Soup {
+                name: "Swashbuckle.AspNetCore".to_owned(),
+                version: "6.3.1".to_owned(),
+                meta: Map::new(),
+            },
+        ]
+        .into_iter()
+        .collect::<BTreeSet<Soup>>();
         assert_eq!(expected_soups, soups);
     }
 
@@ -124,7 +139,7 @@ mod tests {
 </Project>
         "#;
 
-        let result = CsProj{}.soups(content, &Map::new());
+        let result = CsProj {}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
