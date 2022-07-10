@@ -1,6 +1,6 @@
 use clap::Parser;
 use serde_json::{json, Map, Value};
-use std::{env, path};
+use std::{env, path, process};
 
 mod dir_scan;
 mod parse;
@@ -19,7 +19,7 @@ struct Cli {
 
     /// Directory to scan
     #[clap(short = 'd', long = "directory", parse(from_os_str))]
-    target_dir: Option<path::PathBuf>,
+    root_dir: Option<path::PathBuf>,
 
     /// Directory to exclude
     #[clap(short = 'e', long = "exclude-directory", parse(from_os_str))]
@@ -32,55 +32,78 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    let target_dir = match args.target_dir {
-        Some(target_dir) => target_dir,
-        None => match env::current_dir() {
-            Ok(current_dir) => current_dir,
+
+    let output_file = parse_output_file(args.file);
+    let mut current_contexts = match output_file.is_file() {
+        true => match SoupContexts::from_output_file(&output_file) {
+            Ok(contexts) => contexts,
             Err(e) => {
-                panic!("baj {:?}", e);
+                eprintln!(
+                    "Not able to parse output file: {} ({})",
+                    output_file.display(),
+                    e
+                );
+                process::exit(1);
             }
         },
+        false => SoupContexts::empty(),
     };
-    let path = target_dir.as_path();
-    if !path.exists() || !path.is_dir() {
-        panic!("Invalid directory: {:?}", path);
-    }
-    let output_path = args.file.into_boxed_path();
-    if output_path.is_dir() {
-        panic!("Invalid output file: {:?}", output_path);
-    }
-    let exclude_dirs = args.exclude_dirs;
 
+    let root_dir = parse_root_dir(args.root_dir);
+    let exclude_dirs = args.exclude_dirs;
     let default_meta = args
         .meta_keys
         .into_iter()
         .map(|meta_key| (meta_key, json!("")))
         .collect::<Map<String, Value>>();
-
-    let mut current_contexts = match output_path.is_file() {
-        true => match SoupContexts::from_output_file(&output_path) {
-            Ok(contexts) => contexts,
-            Err(e) => {
-                panic!("{}", e);
-            }
-        },
-        false => SoupContexts::empty(),
-    };
-    let result = match dir_scan::scan(&target_dir, &exclude_dirs) {
+    let scan_result = match dir_scan::scan(&root_dir, &exclude_dirs) {
         Ok(result) => result,
         Err(e) => {
-            panic!("{}", e);
+            eprintln!(
+                "Error while scanning directory: {} ({})",
+                root_dir.display(),
+                e
+            );
+            process::exit(1);
         }
     };
-    let scanned_contexts = match SoupContexts::from_paths(result, path, default_meta) {
+    let scanned_contexts = match SoupContexts::from_paths(scan_result, root_dir, default_meta) {
         Ok(contexts) => contexts,
         Err(e) => {
-            panic!("{}", e);
+            eprintln!("{}", e);
+            process::exit(1);
         }
     };
 
     current_contexts.apply(scanned_contexts);
-    if let Err(e) = current_contexts.write_to_file(&output_path) {
-        panic!("{}", e);
+    if let Err(e) = current_contexts.write_to_file(&output_file) {
+        eprintln!("Error while writing to file: {}", e);
+        process::exit(1);
     }
+}
+
+fn parse_root_dir(dir: Option<path::PathBuf>) -> path::PathBuf {
+    let root_dir = match dir {
+        Some(target_dir) => target_dir,
+        None => match env::current_dir() {
+            Ok(current_dir) => current_dir,
+            Err(e) => {
+                eprintln!("Could not obtain current directory: {}", e);
+                process::exit(1);
+            }
+        },
+    };
+    if !root_dir.exists() || !root_dir.is_dir() {
+        eprintln!("Invalid directory: {}", root_dir.display());
+        process::exit(1);
+    }
+    root_dir
+}
+
+fn parse_output_file(file_path: path::PathBuf) -> path::PathBuf {
+    if file_path.exists() && !file_path.is_file() {
+        eprintln!("Invalid output file: {}", file_path.display());
+        process::exit(1);
+    }
+    file_path
 }
