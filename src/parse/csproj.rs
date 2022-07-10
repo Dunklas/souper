@@ -1,6 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap},
-    io
+    collections::{BTreeSet, HashMap}
 };
 use serde_json::{
     Map,
@@ -8,17 +7,14 @@ use serde_json::{
 };
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use super::SoupSource;
+use super::SoupParse;
 use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub struct CsProj {}
 
-impl<R> SoupSource<R> for CsProj
-where
-    R: io::BufRead,
-{
-    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        let mut reader = Reader::from_reader(reader);
+impl SoupParse for CsProj {
+    fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+        let mut reader = Reader::from_str(content);
         reader.trim_text(true);
         reader.expand_empty_elements(true);
 
@@ -83,9 +79,9 @@ mod tests {
         <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.2.1" />
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
-        let result = CsProj::soups(content, &Map::new());
+        let result = CsProj{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
@@ -106,9 +102,9 @@ mod tests {
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
-        let result = CsProj::soups(content, &Map::new());
+        let result = CsProj{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
@@ -126,9 +122,9 @@ mod tests {
     <ItemGroup>
     </ItemGroup>
 </Project>
-        "#.as_bytes();
+        "#;
 
-        let result = CsProj::soups(content, &Map::new());
+        let result = CsProj{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

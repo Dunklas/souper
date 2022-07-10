@@ -1,6 +1,5 @@
 use std::{
-    collections::{HashMap, BTreeSet},
-    io,
+    collections::{HashMap, BTreeSet}
 };
 use serde_json::{
     Map,
@@ -8,7 +7,7 @@ use serde_json::{
 };
 use serde::Deserialize;
 use crate::soup::model::{Soup, SoupSourceParseError};
-use super::SoupSource;
+use super::SoupParse;
 
 pub struct PackageJson {}
 
@@ -17,9 +16,9 @@ struct Content {
     dependencies: HashMap<String, String>
 }
 
-impl <R> SoupSource<R> for PackageJson where R: io::BufRead {
-    fn soups(reader: R, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        let content: Content = match serde_json::from_reader(reader) {
+impl SoupParse for PackageJson {
+    fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+        let content: Content = match serde_json::from_str(content) {
             Ok(content) => content,
             Err(e) => {
                 return Err(SoupSourceParseError{
@@ -48,8 +47,8 @@ mod tests {
             "dependencies": {
                 "some-lib": "^1.0.0"
             }
-        }"#.as_bytes();
-        let result = PackageJson::soups(content, &Map::new());
+        }"#;
+        let result = PackageJson{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(1, soups.len());
@@ -68,8 +67,8 @@ mod tests {
                 "some-lib": "^1.0.0",
                 "another-lib": "6.6.6"
             }
-        }"#.as_bytes();
-        let result = PackageJson::soups(content, &Map::new());
+        }"#;
+        let result = PackageJson{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(2, soups.len());
@@ -84,8 +83,8 @@ mod tests {
     fn no_dependencies() {
         let content = r#"{
             "dependencies": {}
-        }"#.as_bytes();
-        let result = PackageJson::soups(content, &Map::new());
+        }"#;
+        let result = PackageJson{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

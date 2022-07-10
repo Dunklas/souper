@@ -1,79 +1,43 @@
+use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::File;
+use std::fs;
 use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
-use serde_json::{
-    Map,
-    Value
-};
 
+use crate::parse::SoupParse;
 use crate::soup::model::{Soup, SoupContexts, SouperIoError};
-use crate::parse::{
-    SoupSource,
-    package_json::PackageJson,
-    csproj::CsProj,
-    docker_base::DockerBase
-};
 use crate::utils;
 
 impl SoupContexts {
     pub fn from_paths<P: AsRef<Path>>(
-        paths: Vec<PathBuf>,
+        paths: Vec<(PathBuf, Vec<Box<dyn SoupParse>>)>,
         source_dir: P,
-        default_meta: Map<String, Value>
+        default_meta: Map<String, Value>,
     ) -> Result<SoupContexts, SouperIoError> {
         let mut soup_contexts: BTreeMap<String, BTreeSet<Soup>> = BTreeMap::new();
-        for path in paths {
-            let file = match File::open(&path) {
-                Ok(file) => file,
-                Err(e) => return Err(SouperIoError{
-                    message: format!("Not able to open file: {} ({})", path.display(), e)
-                })
-            };
-            let reader = BufReader::new(file);
-            let filename = match path.file_name() {
-                Some(filename) => filename,
-                None => {
-                    return Err(SouperIoError{
-                        message: format!("Not able to obtain filename for path: {}", path.display())
-                    });
-                }
-            };
-            let parse_result = match filename.to_str() {
-                    Some("package.json") => PackageJson::soups(reader, &default_meta),
-                    Some(x) if x.contains(".csproj") => CsProj::soups(reader, &default_meta),
-                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(reader, &default_meta),
-                    _ => {
-                        panic!("No parser found for: {:?}", filename)
-                    }
-            };
-            let soups = match parse_result {
-                Ok(soups) => soups,
+        for (path, parsers) in paths {
+            let file_content = match fs::read_to_string(&path) {
+                Ok(content) => content,
                 Err(e) => {
-                    return Err(SouperIoError{
-                        message: format!("Unable to parse {} due to: {}", path.display(), e)
-                    });
-                }
-            };
-            let relative_path = match utils::relative_path(path.as_ref(), source_dir.as_ref()) {
-                Ok(relative_path) => relative_path,
-                Err(_e) => {
                     return Err(SouperIoError {
-                        message: format!("Not able to obtain relative path for: {} (from {})", path.display(), source_dir.as_ref().display())
-                    });
-                }
-            };
-            let relative_path = relative_path.into_os_string();
-            let relative_path = match relative_path.into_string() {
-                Ok(path_string) => path_string,
-                Err(_) => {
-                    return Err(SouperIoError{
-                        message: "Not able to convert relative path to string".to_string()
+                        message: format!("Not able to read file: {} ({})", path.display(), e),
                     })
                 }
             };
-            let relative_path = relative_path.replace('\\', "/");
-            soup_contexts.insert(relative_path, soups);
+            let parse_results: Result<Vec<_>, _> = parsers
+                .into_iter()
+                .map(|y| y.soups(&file_content, &default_meta))
+                .collect();
+            let soups = match parse_results {
+                Ok(soups_iter) => soups_iter.into_iter().flatten().collect(),
+                Err(e) => {
+                    return Err(SouperIoError {
+                        message: format!("Unable to parse {} due to: {}", path.display(), e),
+                    });
+                }
+            };
+            let context_path = relative_path(path.as_ref(), source_dir.as_ref())?;
+            soup_contexts.insert(context_path, soups);
         }
         Ok(SoupContexts {
             contexts: soup_contexts,
@@ -81,11 +45,15 @@ impl SoupContexts {
     }
 
     pub fn from_output_file<P: AsRef<Path>>(file_path: P) -> Result<SoupContexts, SouperIoError> {
-        let output_file = match File::open(file_path.as_ref()) {
+        let output_file = match fs::File::open(file_path.as_ref()) {
             Ok(file) => file,
             Err(e) => {
-                return Err(SouperIoError{
-                    message: format!("Not able to open file: {} ({})", file_path.as_ref().display(), e)
+                return Err(SouperIoError {
+                    message: format!(
+                        "Not able to open file: {} ({})",
+                        file_path.as_ref().display(),
+                        e
+                    ),
                 });
             }
         };
@@ -93,8 +61,12 @@ impl SoupContexts {
         let contexts: BTreeMap<String, BTreeSet<Soup>> = match serde_json::from_reader(reader) {
             Ok(contexts) => contexts,
             Err(e) => {
-                return Err(SouperIoError{
-                    message: format!("Not able to parse file: {} ({})", file_path.as_ref().display(), e)
+                return Err(SouperIoError {
+                    message: format!(
+                        "Not able to parse file: {} ({})",
+                        file_path.as_ref().display(),
+                        e
+                    ),
                 });
             }
         };
@@ -102,23 +74,62 @@ impl SoupContexts {
     }
 
     pub fn write_to_file<P: AsRef<Path>>(&self, file_path: P) -> Result<(), SouperIoError> {
-        let mut output_file = match File::create(&file_path) {
+        let mut output_file = match fs::File::create(&file_path) {
             Ok(file) => file,
-            Err(e) => return Err(SouperIoError{
-                message: format!("Not able to create file: {} ({})", file_path.as_ref().display(), e)
-            })
+            Err(e) => {
+                return Err(SouperIoError {
+                    message: format!(
+                        "Not able to create file: {} ({})",
+                        file_path.as_ref().display(),
+                        e
+                    ),
+                })
+            }
         };
         let json = match serde_json::to_string_pretty(&self.contexts()) {
             Ok(json) => json,
-            Err(e) => return Err(SouperIoError{
-                message: format!("Not able to serialize to json: {}", e)
-            })
+            Err(e) => {
+                return Err(SouperIoError {
+                    message: format!("Not able to serialize to json: {}", e),
+                })
+            }
         };
         match output_file.write_all(json.as_bytes()) {
             Ok(_x) => Ok(()),
-            Err(e) => return Err(SouperIoError{
-                message: format!("Not able to write to file: {} ({})", file_path.as_ref().display(), e)
-            }),
+            Err(e) => {
+                return Err(SouperIoError {
+                    message: format!(
+                        "Not able to write to file: {} ({})",
+                        file_path.as_ref().display(),
+                        e
+                    ),
+                })
+            }
         }
     }
+}
+
+fn relative_path<P: AsRef<Path>>(full_path: P, root_path: P) -> Result<String, SouperIoError> {
+    let relative_path = match utils::relative_path(full_path.as_ref(), root_path.as_ref()) {
+        Ok(relative_path) => relative_path,
+        Err(_e) => {
+            return Err(SouperIoError {
+                message: format!(
+                    "Not able to obtain relative path for: {} (from {})",
+                    full_path.as_ref().display(),
+                    root_path.as_ref().display()
+                ),
+            });
+        }
+    };
+    let relative_path = match relative_path.into_os_string().into_string() {
+        Ok(path_string) => path_string,
+        Err(_) => {
+            return Err(SouperIoError {
+                message: "Not able to convert relative path to string".to_string(),
+            })
+        }
+    };
+    let relative_path = relative_path.replace('\\', "/");
+    Ok(relative_path)
 }
