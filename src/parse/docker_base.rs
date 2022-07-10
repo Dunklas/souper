@@ -21,16 +21,25 @@ impl SoupParse for DockerBase {
         let lines = content.lines();
         for line in lines {
             if let Some(captures) = BASE_PATTERN.captures(line) {
-                let name = captures.name("name").unwrap().as_str();
-                let version = captures.name("version").unwrap().as_str();
                 result.insert(Soup {
-                    name: name.to_owned(),
-                    version: version.to_owned(),
+                    name: named_capture(&captures, "name")?,
+                    version: named_capture(&captures, "version")?,
                     meta: default_meta.clone(),
                 });
             }
         }
         Ok(result)
+    }
+}
+
+fn named_capture(captures: &regex::Captures, name: &str) -> Result<String, SoupSourceParseError> {
+    match captures.name(name) {
+        Some(value) => Ok(value.as_str().to_owned()),
+        None => {
+            return Err(SoupSourceParseError{
+                message: "Unable to parse FROM statement in dockerfile".to_owned()
+            });
+        }
     }
 }
 
