@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 impl SoupSource for DockerBase {
-    fn soups(content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
+    fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut result: BTreeSet<Soup> = BTreeSet::new();
         let lines = content.lines();
         for line in lines {
@@ -45,7 +45,7 @@ mod tests {
 FROM postgres:14.4
         "#;
 
-        let result = DockerBase::soups(content, &Map::new());
+        let result = DockerBase{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -62,7 +62,7 @@ FROM postgres:14.4
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#;
 
-        let result = DockerBase::soups(content, &Map::new());
+        let result = DockerBase{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup {
@@ -79,7 +79,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         "#;
 
-        let result = DockerBase::soups(content, &Map::new());
+        let result = DockerBase{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         let expected_soup = Soup{
@@ -95,7 +95,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
         let content = r#"
 COPY --chown app:app . ./
         "#;
-        let result = DockerBase::soups(content, &Map::new());
+        let result = DockerBase{}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());

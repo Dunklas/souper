@@ -6,7 +6,7 @@ use serde_json::{
 use crate::soup::model::{Soup, SoupSourceParseError};
 
 pub trait SoupSource {
-    fn soups(content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError>;
+    fn soups(&self, content: &str, default_meta: &Map<String, Value>) -> Result<BTreeSet<Soup>, SoupSourceParseError>;
 }
 
 pub mod package_json;

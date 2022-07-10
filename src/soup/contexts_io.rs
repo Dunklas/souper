@@ -39,9 +39,9 @@ impl SoupContexts {
                 }
             };
             let parse_result = match filename.to_str() {
-                    Some("package.json") => PackageJson::soups(&file_content, &default_meta),
-                    Some(x) if x.contains(".csproj") => CsProj::soups(&file_content, &default_meta),
-                    Some(x) if x.contains("Dockerfile") => DockerBase::soups(&file_content, &default_meta),
+                    Some("package.json") => PackageJson{}.soups(&file_content, &default_meta),
+                    Some(x) if x.contains(".csproj") => CsProj{}.soups(&file_content, &default_meta),
+                    Some(x) if x.contains("Dockerfile") => DockerBase{}.soups(&file_content, &default_meta),
                     _ => {
                         panic!("No parser found for: {:?}", filename)
                     }
