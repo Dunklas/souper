@@ -60,7 +60,10 @@ pub fn scan(
     Ok(SoupContexts { contexts })
 }
 
-fn scan_dirs_recursively(root: &PathBuf, exclude_dirs: &Vec<PathBuf>) -> Result<Vec<(PathBuf, SoupParsers)>, Error> {
+fn scan_dirs_recursively(
+    root: &PathBuf,
+    exclude_dirs: &Vec<PathBuf>,
+) -> Result<Vec<(PathBuf, SoupParsers)>, Error> {
     let mut sources: Vec<(PathBuf, Vec<Box<dyn SoupParse>>)> = Vec::new();
     'entries: for entry in fs::read_dir(root)? {
         let entry = entry?;
