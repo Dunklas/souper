@@ -26,7 +26,7 @@ impl SoupParse for PackageJson {
             }
         };
 
-        let soups =match parse_result.dependencies {
+        let soups = match parse_result.dependencies {
             None => BTreeSet::new(),
             Some(dependencies) => dependencies
                 .into_iter()
@@ -35,7 +35,7 @@ impl SoupParse for PackageJson {
                     version: value,
                     meta: default_meta.clone(),
                 })
-                .collect::<BTreeSet<Soup>>()
+                .collect::<BTreeSet<Soup>>(),
         };
         Ok(soups)
     }
@@ -94,9 +94,11 @@ mod tests {
         assert_eq!(expected_soups, soups);
     }
 
-    #[test_case(r#"{
+    #[test_case(
+        r#"{
 "dependencies": {}
-    }"#)]
+    }"#
+    )]
     #[test_case("{}")]
     fn no_dependencies(input: &str) {
         let result = PackageJson {}.soups(input, &Map::new());

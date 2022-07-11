@@ -133,8 +133,14 @@ mod tests {
 
     #[test_case("FROM fedora@ca468b84b84846e84", "fedora")]
     #[test_case("FROM fedora/httpd@ca468b84b84846e84", "fedora/httpd")]
-    #[test_case("FROM mcr.microsoft.com/dotnet/sdk@ca468b84b84846e84", "mcr.microsoft.com/dotnet/sdk")]
-    #[test_case("FROM mcr.microsoft.com:443/dotnet/sdk@ca468b84b84846e84", "mcr.microsoft.com:443/dotnet/sdk")]
+    #[test_case(
+        "FROM mcr.microsoft.com/dotnet/sdk@ca468b84b84846e84",
+        "mcr.microsoft.com/dotnet/sdk"
+    )]
+    #[test_case(
+        "FROM mcr.microsoft.com:443/dotnet/sdk@ca468b84b84846e84",
+        "mcr.microsoft.com:443/dotnet/sdk"
+    )]
     fn with_digest(input: &str, expected_name: &str) {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());

@@ -58,8 +58,8 @@ impl SoupParse for Cargo {
                         message: format!("Malformed dependency: {}", dependency),
                     }),
                 })
-                .collect::<Result<BTreeSet<Soup>, _>>()
-            }
+                .collect::<Result<BTreeSet<Soup>, _>>(),
+        }
     }
 }
 
@@ -68,14 +68,18 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case(r#"
+    #[test_case(
+        r#"
 [dependencies]
 serde = "1.0.137"
-    "#)]
-    #[test_case(r#"
+    "#
+    )]
+    #[test_case(
+        r#"
 [dependencies]
 serde = { version = "1.0.137", features = ["derive"] }
-    "#)]
+    "#
+    )]
     fn simple_dependency(input: &str) {
         let result = Cargo {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
@@ -129,22 +133,30 @@ quick-xml = "0.23.0"
         assert_eq!(0, soups.len());
     }
 
-    #[test_case(r#"
+    #[test_case(
+        r#"
 [dependencies]
 serde_json = { verzion = "1.0.82", features = ["preserve_order"] }
-    "#)]
-    #[test_case(r#"
+    "#
+    )]
+    #[test_case(
+        r#"
 [dependencies]
 serde_json = { features = ["preserve_order"] }
-    "#)]
-    #[test_case(r#"
+    "#
+    )]
+    #[test_case(
+        r#"
 [dependencies]
 serde_json = 4.42
-    "#)]
-    #[test_case(r#"
+    "#
+    )]
+    #[test_case(
+        r#"
 [dependencies]
 serde_json = { version = { verzion = "1.0.82" }, features = ["preserve_order"] }
-    "#)]
+    "#
+    )]
     #[test_case(r#"dependencies = "serde""#)]
     fn missing_or_invalid_version(input: &str) {
         let result = Cargo {}.soups(input, &Map::new());
