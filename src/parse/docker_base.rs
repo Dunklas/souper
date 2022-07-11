@@ -61,103 +61,64 @@ fn named_capture(captures: &regex::Captures, name: &str) -> Result<String, SoupS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
-    #[test]
-    fn simple_name() {
-        let content = r#"
-FROM postgres:14.4
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
-        assert_eq!(true, result.is_ok());
-        let soups = result.unwrap();
-        let expected_soup = Soup {
-            name: "postgres".to_owned(),
-            version: "14.4".to_owned(),
-            meta: Map::new(),
-        };
-        assert_eq!(true, soups.contains(&expected_soup));
-    }
-
-    #[test]
-    fn multiple_parts_name() {
-        let content = r#"
-FROM fedora/httpd:v1.0.0
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
+    #[test_case("FROM postgres:14.4")]
+    #[test_case("FROM --platform=linux/x86_64 postgres:14.4")]
+    #[test_case("FROM postgres:14.4 AS build-env")]
+    fn simple_image_name(input: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(
             true,
             soups.contains(&Soup {
-                name: "fedora/httpd".to_owned(),
-                version: "v1.0.0".to_owned(),
-                meta: Map::new()
-            })
-        )
-    }
-
-    #[test]
-    fn with_digest() {
-        let content = r#"
-FROM fedora/httpd@ca468b84b84846e84
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
-        assert_eq!(true, result.is_ok());
-        let soups = result.unwrap();
-        assert_eq!(
-            true,
-            soups.contains(&Soup {
-                name: "fedora/httpd".to_owned(),
-                version: "ca468b84b84846e84".to_owned(),
+                name: "postgres".to_owned(),
+                version: "14.4".to_owned(),
                 meta: Map::new()
             })
         );
     }
 
-    #[test]
-    fn named_base() {
-        let content = r#"
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
+    #[test_case("FROM fedora/httpd:v1.6.2")]
+    #[test_case("FROM --platform=linux/i686 fedora/httpd:v1.6.2")]
+    #[test_case("FROM fedora/httpd:v1.6.2 AS some-name")]
+    fn multiple_parts_image_name(input: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
-        let expected_soup = Soup {
-            name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
-            version: "6.0".to_owned(),
-            meta: Map::new(),
-        };
-        assert_eq!(true, soups.contains(&expected_soup));
+        assert_eq!(
+            true,
+            soups.contains(&Soup {
+                name: "fedora/httpd".to_owned(),
+                version: "v1.6.2".to_owned(),
+                meta: Map::new()
+            })
+        )
     }
 
-    #[test]
-    fn with_platform() {
-        let content = r#"
-FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
+    #[test_case("FROM mcr.microsoft.com/dotnet/sdk:6.0")]
+    #[test_case("FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0")]
+    #[test_case("FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env")]
+    fn hostname_image_name(input: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
-        let expected_soup = Soup {
-            name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
-            version: "6.0".to_owned(),
-            meta: Map::new(),
-        };
-        assert_eq!(true, soups.contains(&expected_soup));
+        assert_eq!(
+            true,
+            soups.contains(&Soup {
+                name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
+                version: "6.0".to_owned(),
+                meta: Map::new()
+            })
+        );
     }
 
-    #[test]
-    fn with_hostname_port() {
-        let content = r#"
-FROM mcr.microsoft.com:443/dotnet/sdk:6.0
-        "#;
-
-        let result = DockerBase {}.soups(content, &Map::new());
+    #[test_case("FROM mcr.microsoft.com:443/dotnet/sdk:6.0")]
+    #[test_case("FROM --platform=linux/x86_64 mcr.microsoft.com:443/dotnet/sdk:6.0")]
+    #[test_case("FROM mcr.microsoft.com:443/dotnet/sdk:6.0 AS build-env")]
+    fn hostname_port_image_name(input: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(
@@ -170,12 +131,28 @@ FROM mcr.microsoft.com:443/dotnet/sdk:6.0
         );
     }
 
-    #[test]
-    fn no_from_statement() {
-        let content = r#"
-COPY --chown app:app . ./
-        "#;
-        let result = DockerBase {}.soups(content, &Map::new());
+    #[test_case("FROM fedora@ca468b84b84846e84", "fedora")]
+    #[test_case("FROM fedora/httpd@ca468b84b84846e84", "fedora/httpd")]
+    #[test_case("FROM mcr.microsoft.com/dotnet/sdk@ca468b84b84846e84", "mcr.microsoft.com/dotnet/sdk")]
+    #[test_case("FROM mcr.microsoft.com:443/dotnet/sdk@ca468b84b84846e84", "mcr.microsoft.com:443/dotnet/sdk")]
+    fn with_digest(input: &str, expected_name: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(
+            true,
+            soups.contains(&Soup {
+                name: expected_name.to_owned(),
+                version: "ca468b84b84846e84".to_owned(),
+                meta: Map::new()
+            })
+        );
+    }
+
+    #[test_case("COPY --chown app:app . ./")]
+    #[test_case("")]
+    fn no_from_statement(input: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
