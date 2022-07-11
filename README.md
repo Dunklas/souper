@@ -10,26 +10,12 @@ If a SOUP has been added or removed, the json-file will be updated accordingly.
 In order to be compliant with standards such as [IEC 62304](https://en.wikipedia.org/wiki/IEC_62304), you might need to maintain documentation related to software of unknown provinence (SOUP).
 With souper you can keep this documentation close to your source code and have it updated together with the relevant changes.
 
-Below is an example of how the output looks like, with some arbitrary metadata.
-
-
-```json
-{
-    "src/package.json": [
-        {
-            "name": "react",
-            "version": "18.2.0",
-            "meta": {
-                "purpose": "Enable us to efficiently build single page applications"
-            }
-        }
-    ]
-}
-```
+An example of how the output may look like can be found [here](./soups.json).
 
 Souper will attempt to identify SOUPs from the following sources:
  - package.json (npm)
  - *.csproj (ASP.NET)
+ - Cargo.toml (rust)
  - docker base images
 
 ## Installation

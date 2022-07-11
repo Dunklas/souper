@@ -1,0 +1,53 @@
+{
+  "Cargo.toml": [
+    {
+      "name": "clap",
+      "version": "3.2.8",
+      "meta": {
+        "rationale": "Parse command-line arguments"
+      }
+    },
+    {
+      "name": "lazy_static",
+      "version": "1.4.0",
+      "meta": {
+        "rationale": "Avoid compiling regex more than once"
+      }
+    },
+    {
+      "name": "quick-xml",
+      "version": "0.23.0",
+      "meta": {
+        "rationale": "Parse XML-based files to identify SOUPs"
+      }
+    },
+    {
+      "name": "regex",
+      "version": "1.6.0",
+      "meta": {
+        "rationale": "Parse text files to identify SOUPs"
+      }
+    },
+    {
+      "name": "serde",
+      "version": "1.0.137",
+      "meta": {
+        "rationale": "Framework for serializing/deserializing data. Required by serde_json and toml."
+      }
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.82",
+      "meta": {
+        "rationale": "Parse JSON files to identify SOUPs"
+      }
+    },
+    {
+      "name": "toml",
+      "version": "0.5.9",
+      "meta": {
+        "rationale": "Parse TOML files to identify SOUPs"
+      }
+    }
+  ]
+}
