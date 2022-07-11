@@ -77,7 +77,7 @@ impl SoupContexts {
     }
 
     pub fn write_to_file(&self, file_path: &PathBuf) -> Result<(), SouperIoError> {
-        let output_file = match fs::File::create(file_path) {
+        let mut output_file = match fs::File::create(file_path) {
             Ok(file) => file,
             Err(e) => {
                 return Err(SouperIoError {
@@ -89,10 +89,10 @@ impl SoupContexts {
                 });
             }
         };
-        self.write(output_file)
+        self.write(&mut output_file)
     }
 
-    fn write<W>(&self, mut writer: W) -> Result<(), SouperIoError> where W: Write {
+    fn write<W>(&self, writer: &mut W) -> Result<(), SouperIoError> where W: Write {
         let json = match serde_json::to_string_pretty(&self.contexts()) {
             Ok(json) => json,
             Err(e) => {
@@ -172,6 +172,7 @@ mod tests {
 }
         "#;
         let result = SoupContexts::read(input.as_bytes());
+
         assert_eq!(true, result.is_ok());
         let contexts = result.unwrap().contexts;
         assert_eq!(true, contexts.contains_key("src/package.json"));
@@ -189,5 +190,43 @@ mod tests {
             ].into_iter().collect::<BTreeSet<Soup>>(),
             *contexts.get("src/Dockerfile").unwrap()
         )
+    }
+
+    #[test]
+    fn write() {
+        let input = SoupContexts {
+            contexts: vec![
+                ("src/package.json".to_owned(), vec![
+                    Soup { name: "some-dependency".to_owned(), version: "6.6.6".to_owned(), meta: Map::new() }
+                ].into_iter().collect::<BTreeSet<Soup>>()),
+                ("src/Dockerfile".to_owned(), vec![
+                    Soup { name: "some-image".to_owned(), version: "6.0-jammy".to_owned(), meta: serde_json::json!({"rationale": "Do this and that" }).as_object().unwrap().clone() }
+                ].into_iter().collect::<BTreeSet<Soup>>())
+            ].into_iter().collect::<BTreeMap<String, BTreeSet<Soup>>>()
+        };
+
+        let mut buffer = Vec::<u8>::new();
+        input.write(&mut buffer).unwrap();
+        assert_eq!(
+            r#"{
+  "src/Dockerfile": [
+    {
+      "name": "some-image",
+      "version": "6.0-jammy",
+      "meta": {
+        "rationale": "Do this and that"
+      }
+    }
+  ],
+  "src/package.json": [
+    {
+      "name": "some-dependency",
+      "version": "6.6.6",
+      "meta": {}
+    }
+  ]
+}"#.to_owned().trim(),
+            String::from_utf8(buffer).unwrap().trim()
+        );
     }
 }
