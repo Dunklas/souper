@@ -139,6 +139,25 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
     }
 
     #[test]
+    fn with_hostname_port() {
+        let content = r#"
+FROM mcr.microsoft.com:443/dotnet/sdk:6.0 
+        "#;
+
+        let result = DockerBase {}.soups(content, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(
+            true,
+            soups.contains(&Soup {
+                name: "mcr.microsoft.com:443/dotnet/sdk".to_owned(),
+                version: "6.0".to_owned(),
+                meta: Map::new()
+            })
+        );
+    }
+
+    #[test]
     fn no_from_statement() {
         let content = r#"
 COPY --chown app:app . ./
