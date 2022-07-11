@@ -7,14 +7,16 @@ use std::collections::BTreeSet;
 
 pub struct DockerBase {}
 
-static PATTERNS: [&'static str; 2] = [
+static PATTERNS: [&str; 2] = [
     r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$",
-    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}:[0-9]+(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$"
+    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}:[0-9]+(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$",
 ];
 
 lazy_static! {
     static ref PATTERN_SET: RegexSet = RegexSet::new(&PATTERNS).unwrap();
-    static ref REGEXES: Vec<Regex> = PATTERN_SET.patterns().iter()
+    static ref REGEXES: Vec<Regex> = PATTERN_SET
+        .patterns()
+        .iter()
         .map(|pat| Regex::new(pat).unwrap())
         .collect();
 }
@@ -28,7 +30,9 @@ impl SoupParse for DockerBase {
         let mut result: BTreeSet<Soup> = BTreeSet::new();
         let lines = content.lines();
         for line in lines {
-            let matching_patterns = PATTERN_SET.matches(line).into_iter()
+            let matching_patterns = PATTERN_SET
+                .matches(line)
+                .into_iter()
                 .map(|match_id| &REGEXES[match_id])
                 .collect::<Vec<&Regex>>();
             if let Some(pattern) = matching_patterns.first() {
@@ -80,13 +84,17 @@ FROM postgres:14.4
         let content = r#"
 FROM fedora/httpd:v1.0.0
         "#;
-        
+
         let result = DockerBase {}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(
             true,
-            soups.contains(&Soup { name: "fedora/httpd".to_owned(), version: "v1.0.0".to_owned(), meta: Map::new() })
+            soups.contains(&Soup {
+                name: "fedora/httpd".to_owned(),
+                version: "v1.0.0".to_owned(),
+                meta: Map::new()
+            })
         )
     }
 
@@ -95,13 +103,17 @@ FROM fedora/httpd:v1.0.0
         let content = r#"
 FROM fedora/httpd@ca468b84b84846e84
         "#;
-        
+
         let result = DockerBase {}.soups(content, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(
             true,
-            soups.contains(&Soup { name: "fedora/httpd".to_owned(), version: "ca468b84b84846e84".to_owned(), meta: Map::new() })
+            soups.contains(&Soup {
+                name: "fedora/httpd".to_owned(),
+                version: "ca468b84b84846e84".to_owned(),
+                meta: Map::new()
+            })
         );
     }
 
