@@ -19,3 +19,7 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: fmt
         run: cargo fmt --check
+      - name: test coverage
+        run: |
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --fail-under 68
