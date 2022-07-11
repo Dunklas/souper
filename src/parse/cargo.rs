@@ -29,9 +29,9 @@ impl SoupParse for Cargo {
             .dependencies
             .into_iter()
             .map(|(dependency, value)| match value {
-                toml::Value::String(str) => Ok(Soup {
+                toml::Value::String(version) => Ok(Soup {
                     name: dependency,
-                    version: str,
+                    version,
                     meta: default_meta.clone(),
                 }),
                 toml::Value::Table(table) => match table.get("version") {
