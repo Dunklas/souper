@@ -7,8 +7,9 @@ use std::collections::BTreeSet;
 
 pub struct DockerBase {}
 
-static PATTERNS: [&'static str; 1] = [
-    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.-_]+)(?: AS [\w\-]+)?$"
+static PATTERNS: [&'static str; 2] = [
+    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$",
+    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}:[0-9]+(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$"
 ];
 
 lazy_static! {
@@ -124,7 +125,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
     #[test]
     fn with_platform() {
         let content = r#"
-FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0
         "#;
 
         let result = DockerBase {}.soups(content, &Map::new());
@@ -141,7 +142,7 @@ FROM --platform=linux/x86_64 mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
     #[test]
     fn with_hostname_port() {
         let content = r#"
-FROM mcr.microsoft.com:443/dotnet/sdk:6.0 
+FROM mcr.microsoft.com:443/dotnet/sdk:6.0
         "#;
 
         let result = DockerBase {}.soups(content, &Map::new());
