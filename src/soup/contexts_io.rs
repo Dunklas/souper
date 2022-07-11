@@ -61,7 +61,7 @@ impl SoupContexts {
         SoupContexts::read(reader)
     }
 
-    pub fn read<R>(reader: R) -> Result<SoupContexts, SouperIoError> where R: Read {
+    fn read<R>(reader: R) -> Result<SoupContexts, SouperIoError> where R: Read {
         let contexts: BTreeMap<String, BTreeSet<Soup>> = match serde_json::from_reader(reader) {
             Ok(contexts) => contexts,
             Err(e) => {
@@ -92,7 +92,7 @@ impl SoupContexts {
         self.write(output_file)
     }
 
-    pub fn write<W>(&self, mut writer: W) -> Result<(), SouperIoError> where W: Write {
+    fn write<W>(&self, mut writer: W) -> Result<(), SouperIoError> where W: Write {
         let json = match serde_json::to_string_pretty(&self.contexts()) {
             Ok(json) => json,
             Err(e) => {
@@ -138,4 +138,56 @@ fn relative_path<P: AsRef<Path>>(full_path: P, root_path: P) -> Result<String, S
     };
     let relative_path = relative_path.replace('\\', "/");
     Ok(relative_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read() {
+        let input = r#"
+{
+    "src/package.json": [
+        {
+            "name": "some-dependency",
+            "version": "6.6.6",
+            "meta": {}
+        },
+        {
+            "name": "another-dependency",
+            "version": "42",
+            "meta": {
+                "rationale": "Do this and that"
+            }
+        }
+    ],
+    "src/Dockerfile": [
+        {
+            "name": "some-image",
+            "version": "6.0-jammy",
+            "meta": {}
+        }
+    ]
+}
+        "#;
+        let result = SoupContexts::read(input.as_bytes());
+        assert_eq!(true, result.is_ok());
+        let contexts = result.unwrap().contexts;
+        assert_eq!(true, contexts.contains_key("src/package.json"));
+        assert_eq!(
+            vec![
+                Soup { name: "some-dependency".to_owned(), version: "6.6.6".to_owned(), meta: Map::new() },
+                Soup { name: "another-dependency".to_owned(), version: "42".to_owned(), meta: serde_json::json!({ "rationale": "Do this and that" }).as_object().unwrap().clone()}
+            ].into_iter().collect::<BTreeSet<Soup>>(),
+            *contexts.get("src/package.json").unwrap()
+        );
+        assert_eq!(true, contexts.contains_key("src/Dockerfile"));
+        assert_eq!(
+            vec![
+                Soup { name: "some-image".to_owned(), version: "6.0-jammy".to_owned(), meta: Map::new() }
+            ].into_iter().collect::<BTreeSet<Soup>>(),
+            *contexts.get("src/Dockerfile").unwrap()
+        )
+    }
 }
