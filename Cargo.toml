@@ -1,6 +1,6 @@
 [package]
 name = "souper"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,3 +12,4 @@ serde_json = { version = "1.0.82", features = ["preserve_order"] }
 quick-xml = "0.23.0"
 regex = "1.6.0"
 lazy_static = "1.4.0"
+toml = "0.5.9"

@@ -1,4 +1,6 @@
-use crate::parse::{csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, SoupParse};
+use crate::parse::{
+    cargo::Cargo, csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, SoupParse,
+};
 use std::{fs, io::Error, path::PathBuf};
 
 const GLOBAL_EXCLUDE_DIRS: [&str; 3] = ["node_modules", "bin", "obj"];
@@ -34,6 +36,9 @@ pub fn scan(
             match file_name.to_str() {
                 Some("package.json") => {
                     sources.push((path, vec![Box::new(PackageJson {})]));
+                }
+                Some("Cargo.toml") => {
+                    sources.push((path, vec![Box::new(Cargo {})]));
                 }
                 Some(file_name_str) if file_name_str.contains(".csproj") => {
                     sources.push((path, vec![Box::new(CsProj {})]));
