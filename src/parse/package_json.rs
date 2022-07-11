@@ -8,7 +8,7 @@ pub struct PackageJson {}
 
 #[derive(Deserialize)]
 struct Content {
-    dependencies: HashMap<String, String>,
+    dependencies: Option<HashMap<String, String>>,
 }
 
 impl SoupParse for PackageJson {
@@ -17,7 +17,7 @@ impl SoupParse for PackageJson {
         content: &str,
         default_meta: &Map<String, Value>,
     ) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
-        let content: Content = match serde_json::from_str(content) {
+        let parse_result: Content = match serde_json::from_str(content) {
             Ok(content) => content,
             Err(e) => {
                 return Err(SoupSourceParseError {
@@ -26,21 +26,25 @@ impl SoupParse for PackageJson {
             }
         };
 
-        Ok(content
-            .dependencies
-            .into_iter()
-            .map(|(key, value)| Soup {
-                name: key,
-                version: value,
-                meta: default_meta.clone(),
-            })
-            .collect::<BTreeSet<Soup>>())
+        let soups = match parse_result.dependencies {
+            None => BTreeSet::new(),
+            Some(dependencies) => dependencies
+                .into_iter()
+                .map(|(key, value)| Soup {
+                    name: key,
+                    version: value,
+                    meta: default_meta.clone(),
+                })
+                .collect::<BTreeSet<Soup>>(),
+        };
+        Ok(soups)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
     #[test]
     fn single_dependency() {
@@ -90,14 +94,23 @@ mod tests {
         assert_eq!(expected_soups, soups);
     }
 
-    #[test]
-    fn no_dependencies() {
-        let content = r#"{
-            "dependencies": {}
-        }"#;
-        let result = PackageJson {}.soups(content, &Map::new());
+    #[test_case(
+        r#"{
+"dependencies": {}
+    }"#
+    )]
+    #[test_case("{}")]
+    fn no_dependencies(input: &str) {
+        let result = PackageJson {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
         assert_eq!(0, soups.len());
+    }
+
+    #[test_case(r#"{"#)]
+    #[test_case("")]
+    fn fail_on_bad_json(input: &str) {
+        let result = PackageJson {}.soups(input, &Map::new());
+        assert_eq!(true, result.is_err());
     }
 }
