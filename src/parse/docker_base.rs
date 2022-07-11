@@ -7,12 +7,12 @@ use std::collections::BTreeSet;
 
 pub struct DockerBase {}
 
-static patterns: [&'static str; 1] = [
-    r"^FROM (?:--platform=[\w/]+ )?(?P<name>[a-z0-9\.-_]+)[:@](?P<tag>[a-zA-Z0-9\.-_]+)(?: AS [\w\-]+)?$"
+static PATTERNS: [&'static str; 1] = [
+    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.-_]+)(?: AS [\w\-]+)?$"
 ];
 
 lazy_static! {
-    static ref PATTERN_SET: RegexSet = RegexSet::new(&patterns).unwrap();
+    static ref PATTERN_SET: RegexSet = RegexSet::new(&PATTERNS).unwrap();
     static ref REGEXES: Vec<Regex> = PATTERN_SET.patterns().iter()
         .map(|pat| Regex::new(pat).unwrap())
         .collect();
@@ -58,7 +58,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_base() {
+    fn simple_name() {
         let content = r#"
 FROM postgres:14.4
         "#;
@@ -72,6 +72,36 @@ FROM postgres:14.4
             meta: Map::new(),
         };
         assert_eq!(true, soups.contains(&expected_soup));
+    }
+
+    #[test]
+    fn multiple_parts_name() {
+        let content = r#"
+FROM fedora/httpd:v1.0.0
+        "#;
+        
+        let result = DockerBase {}.soups(content, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(
+            true,
+            soups.contains(&Soup { name: "fedora/httpd".to_owned(), version: "v1.0.0".to_owned(), meta: Map::new() })
+        )
+    }
+
+    #[test]
+    fn with_digest() {
+        let content = r#"
+FROM fedora/httpd@ca468b84b84846e84
+        "#;
+        
+        let result = DockerBase {}.soups(content, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(
+            true,
+            soups.contains(&Soup { name: "fedora/httpd".to_owned(), version: "ca468b84b84846e84".to_owned(), meta: Map::new() })
+        );
     }
 
     #[test]
