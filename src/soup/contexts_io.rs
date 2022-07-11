@@ -1,7 +1,7 @@
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Write, Read};
 use std::path::{Path, PathBuf};
 
 use crate::parse::SoupParse;
@@ -44,27 +44,30 @@ impl SoupContexts {
         })
     }
 
-    pub fn from_output_file<P: AsRef<Path>>(file_path: P) -> Result<SoupContexts, SouperIoError> {
-        let output_file = match fs::File::open(file_path.as_ref()) {
+    pub fn read_from_file(file_path: &PathBuf) -> Result<SoupContexts, SouperIoError> {
+        let output_file = match fs::File::open(file_path) {
             Ok(file) => file,
             Err(e) => {
                 return Err(SouperIoError {
                     message: format!(
                         "Not able to open file: {} ({})",
-                        file_path.as_ref().display(),
+                        file_path.display(),
                         e
                     ),
                 });
             }
         };
         let reader = BufReader::new(output_file);
+        SoupContexts::read(reader)
+    }
+
+    pub fn read<R>(reader: R) -> Result<SoupContexts, SouperIoError> where R: Read {
         let contexts: BTreeMap<String, BTreeSet<Soup>> = match serde_json::from_reader(reader) {
             Ok(contexts) => contexts,
             Err(e) => {
                 return Err(SouperIoError {
                     message: format!(
-                        "Not able to parse file: {} ({})",
-                        file_path.as_ref().display(),
+                        "Not able to read output-file: {} ",
                         e
                     ),
                 });
@@ -73,19 +76,23 @@ impl SoupContexts {
         Ok(SoupContexts { contexts })
     }
 
-    pub fn write_to_file<P: AsRef<Path>>(&self, file_path: P) -> Result<(), SouperIoError> {
-        let mut output_file = match fs::File::create(&file_path) {
+    pub fn write_to_file(&self, file_path: &PathBuf) -> Result<(), SouperIoError> {
+        let output_file = match fs::File::create(file_path) {
             Ok(file) => file,
             Err(e) => {
                 return Err(SouperIoError {
                     message: format!(
                         "Not able to create file: {} ({})",
-                        file_path.as_ref().display(),
+                        file_path.display(),
                         e
-                    ),
-                })
+                    )
+                });
             }
         };
+        self.write(output_file)
+    }
+
+    pub fn write<W>(&self, mut writer: W) -> Result<(), SouperIoError> where W: Write {
         let json = match serde_json::to_string_pretty(&self.contexts()) {
             Ok(json) => json,
             Err(e) => {
@@ -94,15 +101,14 @@ impl SoupContexts {
                 })
             }
         };
-        match output_file.write_all(json.as_bytes()) {
+        match writer.write_all(json.as_bytes()) {
             Ok(_x) => Ok(()),
             Err(e) => {
                 return Err(SouperIoError {
                     message: format!(
-                        "Not able to write to file: {} ({})",
-                        file_path.as_ref().display(),
+                        "Not able to write output-file: {}",
                         e
-                    ),
+                    )
                 })
             }
         }

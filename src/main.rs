@@ -35,7 +35,7 @@ fn main() {
 
     let output_file = parse_output_file(args.file);
     let mut current_contexts = match output_file.is_file() {
-        true => match SoupContexts::from_output_file(&output_file) {
+        true => match SoupContexts::read_from_file(&output_file) {
             Ok(contexts) => contexts,
             Err(e) => {
                 eprintln!(
