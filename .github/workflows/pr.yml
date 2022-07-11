@@ -28,5 +28,6 @@ jobs:
           tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz
       - name: install cargo-tarpaulin
         run: ./cargo-binstall --no-confirm cargo-tarpaulin
+      - uses: actions/checkout@v2
       - name: verify coverage
         run: cargo tarpaulin --fail-under 68
