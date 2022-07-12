@@ -2,11 +2,12 @@ use clap::Parser;
 use serde_json::{json, Map, Value};
 use std::{env, path, process};
 
-mod dir_scan;
 mod parse;
+mod scan;
 mod soup;
 mod utils;
 
+use scan::dir_scan;
 use soup::model::SoupContexts;
 
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
@@ -35,7 +36,7 @@ fn main() {
 
     let output_file = parse_output_file(args.file);
     let mut current_contexts = match output_file.is_file() {
-        true => match SoupContexts::from_output_file(&output_file) {
+        true => match SoupContexts::read_from_file(&output_file) {
             Ok(contexts) => contexts,
             Err(e) => {
                 eprintln!(
@@ -56,7 +57,7 @@ fn main() {
         .into_iter()
         .map(|meta_key| (meta_key, json!("")))
         .collect::<Map<String, Value>>();
-    let scan_result = match dir_scan::scan(&root_dir, &exclude_dirs) {
+    let scanned_contexts = match dir_scan::scan(&root_dir, &exclude_dirs, default_meta) {
         Ok(result) => result,
         Err(e) => {
             eprintln!(
@@ -64,13 +65,6 @@ fn main() {
                 root_dir.display(),
                 e
             );
-            process::exit(1);
-        }
-    };
-    let scanned_contexts = match SoupContexts::from_paths(scan_result, root_dir, default_meta) {
-        Ok(contexts) => contexts,
-        Err(e) => {
-            eprintln!("{}", e);
             process::exit(1);
         }
     };
