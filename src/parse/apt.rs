@@ -77,10 +77,12 @@ mod tests {
     #[test_case("apt install -y -q curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt install --asume-yes --quiet curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt install -y --quiet curl=7.81.0-1ubuntu1.3")]
+    #[test_case("apt install --quiet -y curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt-get install curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt-get install -y -q curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt-get install --asume-yes --quiet curl=7.81.0-1ubuntu1.3")]
     #[test_case("apt-get install -y --quiet curl=7.81.0-1ubuntu1.3")]
+    #[test_case("apt-get install --quiet -y curl=7.81.0-1ubuntu1.3")]
     fn specific_version(input: &str) {
         let result = Apt {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
