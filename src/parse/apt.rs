@@ -18,6 +18,8 @@ lazy_static! {
         .iter()
         .map(|pat| Regex::new(pat).unwrap())
         .collect();
+    static ref LINE_CONTINUATION: Regex = Regex::new(r"\\.*\n|\r\n").unwrap();
+    static ref MULTI_SPACE: Regex = Regex::new(r"[ \t]+").unwrap();
 }
 
 impl SoupParse for Apt {
@@ -27,8 +29,8 @@ impl SoupParse for Apt {
         default_meta: &Map<String, Value>,
     ) -> Result<BTreeSet<Soup>, SoupSourceParseError> {
         let mut result: BTreeSet<Soup> = BTreeSet::new();
-        let lines = content.lines();
-        for line in lines {
+        let content = normalize(content);
+        for line in content.lines() {
             let matching_patterns = PATTERN_SET
                 .matches(line)
                 .into_iter()
@@ -49,6 +51,12 @@ impl SoupParse for Apt {
         }
         Ok(result)
     }
+}
+
+fn normalize(input: &str) -> String {
+    let result = LINE_CONTINUATION.replace_all(input, " ");
+    let result = MULTI_SPACE.replace_all(&result, " ");
+    result.to_string()
 }
 
 fn named_capture(captures: &regex::Captures, name: &str) -> Result<String, SoupSourceParseError> {
@@ -111,5 +119,25 @@ mod tests {
             },
             soup
         )
+    }
+
+    #[test_case("apt install --assume-yes \\\n\t--quiet curl=7.81.0-1ubuntu1.3")]
+    #[test_case("apt install --assume-yes \\\r\n\t--quiet curl=7.81.0-1ubuntu1.3")]
+    #[test_case("apt install --assume-yes \\ # Some comment\n\t--quiet curl=7.81.0-1ubuntu1.3")]
+    #[test_case("apt install --assume-yes \\ # Some comment\r\n\t--quiet curl=7.81.0-1ubuntu1.3")]
+    fn multi_line(input: &str) {
+        let result = Apt {}.soups(input, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().last().unwrap();
+        assert_eq!(
+            Soup {
+                name: "curl".to_owned(),
+                version: "7.81.0-1ubuntu1.3".to_owned(),
+                meta: Map::new()
+            },
+            soup
+        );
     }
 }
