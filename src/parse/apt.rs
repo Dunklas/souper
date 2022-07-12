@@ -8,8 +8,8 @@ use std::collections::BTreeSet;
 pub struct Apt {}
 
 static PATTERNS: [&str; 2] = [
-    r"apt(?:\-get)? install (?:(?:\-[a-zA-Z] )|(?:\-\-[a-zA-Z\-]+ ))*(?P<name>[a-zA-Z0-9\._]+)=(?P<version>[a-zA-Z0-9\.\-_]+)",
-    r"apt(?:\-get)? install (?:(?:\-[a-zA-Z] )|(?:\-\-[a-zA-Z\-]+ ))*(?P<name>[a-zA-Z0-9\._]+)",
+    r"apt(?:\-get)? install (?:(?:\-[a-zA-Z] )|(?:\-\-[a-zA-Z\-]+ ))*(?P<name>[a-zA-Z0-9\._\-]+)=(?P<version>[a-zA-Z0-9\.\-_]+)",
+    r"apt(?:\-get)? install (?:(?:\-[a-zA-Z] )|(?:\-\-[a-zA-Z\-]+ ))*(?P<name>[a-zA-Z0-9\._\-]+)",
 ];
 lazy_static! {
     static ref PATTERN_SET: RegexSet = RegexSet::new(&PATTERNS).unwrap();
