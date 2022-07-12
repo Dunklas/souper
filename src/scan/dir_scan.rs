@@ -1,6 +1,7 @@
 use crate::{
     parse::{
-        cargo::Cargo, csproj::CsProj, docker_base::DockerBase, package_json::PackageJson, SoupParse,
+        apt::Apt, cargo::Cargo, csproj::CsProj, docker_base::DockerBase, package_json::PackageJson,
+        SoupParse,
     },
     soup::model::{Soup, SoupContexts, SouperIoError},
     utils,
@@ -97,7 +98,7 @@ fn scan_dirs_recursively(
                     sources.push((path, vec![Box::new(CsProj {})]));
                 }
                 Some(file_name_str) if file_name_str.contains("Dockerfile") => {
-                    sources.push((path, vec![Box::new(DockerBase {})]));
+                    sources.push((path, vec![Box::new(DockerBase {}), Box::new(Apt {})]));
                 }
                 _ => {}
             }

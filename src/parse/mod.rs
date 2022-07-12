@@ -10,6 +10,7 @@ pub trait SoupParse {
     ) -> Result<BTreeSet<Soup>, SoupSourceParseError>;
 }
 
+pub mod apt;
 pub mod cargo;
 pub mod csproj;
 pub mod docker_base;

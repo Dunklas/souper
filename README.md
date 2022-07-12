@@ -16,7 +16,10 @@ Souper will attempt to identify SOUPs from the following sources:
  - package.json (npm)
  - *.csproj (ASP.NET)
  - Cargo.toml (rust)
- - docker base images
+ - Dockerfile
+    - base images
+    - packages installed with apt(-get)
+
 
 ## Installation
 
