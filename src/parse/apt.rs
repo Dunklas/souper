@@ -42,7 +42,7 @@ impl SoupParse for Apt {
                         name: named_capture(&captures, "name")?,
                         version: match named_capture(&captures, "version") {
                             Ok(version) => version,
-                            Err(_e) => "unknown".to_owned()
+                            Err(_e) => "unknown".to_owned(),
                         },
                         meta: default_meta.clone(),
                     });
