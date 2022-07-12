@@ -7,7 +7,10 @@ use std::collections::BTreeSet;
 
 pub struct Apt {}
 
-static PATTERNS: [&str; 1] = [r"^apt(?:\-get)? install (?:\-[a-zA-Z\-]{1} )*(?:\-\-[a-zA-Z\-]+ )*(?P<name>[a-zA-Z0-9]+)=(?P<version>[a-zA-Z0-9\.\-_]+)$"];
+static PATTERNS: [&str; 2] = [
+    r"^apt(?:\-get)? install (?:\-[a-zA-Z\-]{1} )*(?:\-\-[a-zA-Z\-]+ )*(?P<name>[a-zA-Z0-9]+)=(?P<version>[a-zA-Z0-9\.\-_]+)$",
+    r"^apt(?:\-get)? install (?:\-[a-zA-Z\-]{1} )*(?:\-\-[a-zA-Z\-]+ )*(?P<name>[a-zA-Z0-9]+)$",
+];
 lazy_static! {
     static ref PATTERN_SET: RegexSet = RegexSet::new(&PATTERNS).unwrap();
     static ref REGEXES: Vec<Regex> = PATTERN_SET
@@ -35,7 +38,10 @@ impl SoupParse for Apt {
                 if let Some(captures) = pattern.captures(line) {
                     result.insert(Soup {
                         name: named_capture(&captures, "name")?,
-                        version: named_capture(&captures, "version")?,
+                        version: match named_capture(&captures, "version") {
+                            Ok(version) => version,
+                            Err(_e) => "unknown".to_owned()
+                        },
                         meta: default_meta.clone(),
                     });
                 }
@@ -49,7 +55,7 @@ fn named_capture(captures: &regex::Captures, name: &str) -> Result<String, SoupS
     match captures.name(name) {
         Some(value) => Ok(value.as_str().to_owned()),
         None => Err(SoupSourceParseError {
-            message: "Unable to parse FROM statement in dockerfile".to_owned(),
+            message: "Unable to parse apt install statement".to_owned(),
         }),
     }
 }
@@ -77,6 +83,30 @@ mod tests {
             Soup {
                 name: "curl".to_owned(),
                 version: "7.81.0-1ubuntu1.3".to_owned(),
+                meta: Map::new()
+            },
+            soup
+        )
+    }
+
+    #[test_case("apt install curl")]
+    #[test_case("apt install -y -q curl")]
+    #[test_case("apt install --asume-yes --quiet curl")]
+    #[test_case("apt install -y --quiet curl")]
+    #[test_case("apt-get install curl")]
+    #[test_case("apt-get install -y -q curl")]
+    #[test_case("apt-get install --asume-yes --quiet curl")]
+    #[test_case("apt-get install -y --quiet curl")]
+    fn unspecified_version(input: &str) {
+        let result = Apt {}.soups(input, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().last().unwrap();
+        assert_eq!(
+            Soup {
+                name: "curl".to_owned(),
+                version: "unknown".to_owned(),
                 meta: Map::new()
             },
             soup
