@@ -13,11 +13,14 @@ jobs:
       - id: change_log
         run: |
           NEW_TAG=$(git tag --sort=-committerdate | head -1)
+          echo "New tag: ${NEW_TAG}"
           PREV_TAG=$(git tag --sort=-committerdate | head -2 | sed -n 2p)
+          echo "Previous tag: ${PREV_TAG}"
           echo "::set-output name=body::$(git log --pretty=format:\ -\ %s "${PREV_TAG}..${NEW_TAG}")"
+      - run: echo ${{ steps.change_log.outputs.body }}
       - uses: softprops/action-gh-release@v1
         with:
-          body: ${{ steps.change_log.outputs.body }}
+          body: Body test
 
   release-build:
     needs: create-release
