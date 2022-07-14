@@ -11,7 +11,6 @@ jobs:
     steps:
       - uses: softprops/action-gh-release@v1
         with:
-          name: ${{ github.ref }}
           generate_release_notes: true
 
   release-build:
