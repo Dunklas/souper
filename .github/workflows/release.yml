@@ -9,18 +9,10 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - id: change_log
-        run: |
-          NEW_TAG=$(git tag --sort=-committerdate | head -1)
-          echo "New tag: ${NEW_TAG}"
-          PREV_TAG=$(git tag --sort=-committerdate | head -2 | sed -n 2p)
-          echo "Previous tag: ${PREV_TAG}"
-          echo "::set-output name=body::$(git log --pretty=format:\ -\ %s "${PREV_TAG}..${NEW_TAG}")"
-      - run: echo ${{ steps.change_log.outputs.body }}
       - uses: softprops/action-gh-release@v1
         with:
-          body: Body test
+          name: ${{ github.ref }}
+          generate_release_notes: true
 
   release-build:
     needs: create-release
