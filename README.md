@@ -1,6 +1,6 @@
 # souper
 
-Scans a given directory for [software of unknown provinence (SOUP)](https://en.wikipedia.org/wiki/Software_of_unknown_pedigree) and writes them to a json-file.
+Scans a given directory for potential [software of unknown provinence (SOUP)](https://en.wikipedia.org/wiki/Software_of_unknown_pedigree) and writes them to a json-file.
 The json-file contains name, version and a meta property for each SOUP.
 The meta property is a json object which may be populated with arbitrary metadata.
 If you run souper after the version of a SOUP has been updated, the json-file will be updated with the new version, while preserving content of the meta property.
