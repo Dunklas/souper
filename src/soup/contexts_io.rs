@@ -197,4 +197,21 @@ mod tests {
             String::from_utf8(buffer).unwrap().trim()
         );
     }
+
+    #[test]
+    fn write_no_content() {
+        let input = SoupContexts{
+            contexts: vec![
+                (
+                    "src/package.json".to_owned(),
+                    vec![].into_iter().collect::<BTreeSet<Soup>>()
+                )
+            ]
+            .into_iter()
+            .collect::<BTreeMap<String, BTreeSet<Soup>>>()
+        };
+        let mut buffer = Vec::<u8>::new();
+        input.write(&mut buffer).unwrap();
+        assert_eq!("{}".to_owned(), String::from_utf8(buffer).unwrap())
+    }
 }
