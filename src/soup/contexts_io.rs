@@ -50,7 +50,10 @@ impl SoupContexts {
     where
         W: Write,
     {
-        let json = match serde_json::to_string_pretty(&self.contexts()) {
+        let contexts_to_print: BTreeMap<&String, &BTreeSet<Soup>> = self.contexts.iter()
+            .filter(|(_, soups)| soups.len() > 0)
+            .collect();
+        let json = match serde_json::to_string_pretty(&contexts_to_print) {
             Ok(json) => json,
             Err(e) => {
                 return Err(SouperIoError {
