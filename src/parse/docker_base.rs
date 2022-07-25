@@ -8,8 +8,8 @@ use std::collections::BTreeSet;
 pub struct DockerBase {}
 
 static PATTERNS: [&str; 2] = [
-    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$",
-    r"^FROM (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}:[0-9]+(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: AS [\w\-]+)?$",
+    r"^(?i)FROM(?-i) (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: (?i)AS(?-i) [\w\-]+)?$",
+    r"^(?i)FROM(?-i) (?:--platform=[\w/]+ )?(?P<name>(?:[a-z0-9\.\-_]+){1}:[0-9]+(?:/[a-z0-9\.\-_]+)*)[:@](?P<tag>[a-zA-Z0-9\.\-_]+)(?: (?i)AS(?-i) [\w\-]+)?$",
 ];
 
 lazy_static! {
@@ -70,13 +70,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "postgres".to_owned(),
                 version: "14.4".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -87,13 +89,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "fedora/httpd".to_owned(),
                 version: "v1.6.2".to_owned(),
                 meta: Map::new()
-            })
+            }
         )
     }
 
@@ -104,13 +108,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
                 version: "6.0".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -121,13 +127,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "mcr.microsoft.com:443/dotnet/sdk".to_owned(),
                 version: "6.0".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -145,13 +153,43 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: expected_name.to_owned(),
                 version: "ca468b84b84846e84".to_owned(),
                 meta: Map::new()
-            })
+            }
+        );
+    }
+
+    #[test_case("from postgres:14.4 as build-env", "postgres", "14.4")]
+    #[test_case("from fedora/httpd:v1.6.2 as some-name", "fedora/httpd", "v1.6.2")]
+    #[test_case(
+        "from mcr.microsoft.com/dotnet/sdk:6.0 as build-env",
+        "mcr.microsoft.com/dotnet/sdk",
+        "6.0"
+    )]
+    #[test_case(
+        "from mcr.microsoft.com:443/dotnet/sdk:6.0 as build-env",
+        "mcr.microsoft.com:443/dotnet/sdk",
+        "6.0"
+    )]
+    fn lower_case(input: &str, expected_name: &str, expected_version: &str) {
+        let result = DockerBase {}.soups(input, &Map::new());
+        assert_eq!(true, result.is_ok());
+        let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
+        assert_eq!(
+            soup,
+            Soup {
+                name: expected_name.to_owned(),
+                version: expected_version.to_owned(),
+                meta: Map::new()
+            }
         );
     }
 
