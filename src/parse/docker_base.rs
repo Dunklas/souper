@@ -70,13 +70,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "postgres".to_owned(),
                 version: "14.4".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -87,13 +89,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "fedora/httpd".to_owned(),
                 version: "v1.6.2".to_owned(),
                 meta: Map::new()
-            })
+            }
         )
     }
 
@@ -104,13 +108,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "mcr.microsoft.com/dotnet/sdk".to_owned(),
                 version: "6.0".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -121,13 +127,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: "mcr.microsoft.com:443/dotnet/sdk".to_owned(),
                 version: "6.0".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -145,13 +153,15 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: expected_name.to_owned(),
                 version: "ca468b84b84846e84".to_owned(),
                 meta: Map::new()
-            })
+            }
         );
     }
 
@@ -171,14 +181,16 @@ mod tests {
         let result = DockerBase {}.soups(input, &Map::new());
         assert_eq!(true, result.is_ok());
         let soups = result.unwrap();
+        assert_eq!(1, soups.len());
+        let soup = soups.into_iter().next().unwrap();
         assert_eq!(
-            true,
-            soups.contains(&Soup {
+            soup,
+            Soup {
                 name: expected_name.to_owned(),
                 version: expected_version.to_owned(),
                 meta: Map::new()
-            })
-        )
+            }
+        );
     }
 
     #[test_case("COPY --chown app:app . ./")]
