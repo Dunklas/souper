@@ -2,7 +2,7 @@
   "Cargo.toml": [
     {
       "name": "clap",
-      "version": "3.2.8",
+      "version": "3.2.15",
       "meta": {
         "rationale": "Parse command-line arguments"
       }
@@ -30,7 +30,7 @@
     },
     {
       "name": "serde",
-      "version": "1.0.137",
+      "version": "1.0.140",
       "meta": {
         "rationale": "Framework for serializing/deserializing data. Required by serde_json and toml."
       }
