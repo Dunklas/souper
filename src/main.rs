@@ -5,10 +5,8 @@ use std::{env, path, process};
 mod parse;
 mod scan;
 mod soup;
+mod souper;
 mod utils;
-
-use scan::dir_scan;
-use soup::model::SoupContexts;
 
 /// Scans a given repository for software of unknown provenance (SOUP) and outputs them in a file.
 #[derive(Parser)]
@@ -33,23 +31,7 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-
     let output_file = parse_output_file(args.file);
-    let mut current_contexts = match output_file.is_file() {
-        true => match SoupContexts::read_from_file(&output_file) {
-            Ok(contexts) => contexts,
-            Err(e) => {
-                eprintln!(
-                    "Not able to parse output file: {} ({})",
-                    output_file.display(),
-                    e
-                );
-                process::exit(1);
-            }
-        },
-        false => SoupContexts::empty(),
-    };
-
     let root_dir = parse_root_dir(args.root_dir);
     let exclude_dirs = args.exclude_dirs;
     let default_meta = args
@@ -57,23 +39,13 @@ fn main() {
         .into_iter()
         .map(|meta_key| (meta_key, json!("")))
         .collect::<Map<String, Value>>();
-    let scanned_contexts = match dir_scan::scan(&root_dir, &exclude_dirs, default_meta) {
-        Ok(result) => result,
+    match souper::run(output_file, root_dir, exclude_dirs, default_meta) {
+        Ok(_res) => {},
         Err(e) => {
-            eprintln!(
-                "Error while scanning directory: {} ({})",
-                root_dir.display(),
-                e
-            );
+            eprintln!("{}", e);
             process::exit(1);
         }
-    };
-
-    current_contexts.apply(scanned_contexts);
-    if let Err(e) = current_contexts.write_to_file(&output_file) {
-        eprintln!("Error while writing to file: {}", e);
-        process::exit(1);
-    }
+    } 
 }
 
 fn parse_root_dir(dir: Option<path::PathBuf>) -> path::PathBuf {
